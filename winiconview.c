@@ -67,7 +67,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 			if (GetClientRect(hwnd, &r) == 0)
 				panic("error getting new list view size");
-			if (MoveWindow(listview, 0, 0, r.right - r.left, r.bottom - r.top, TRUE) == 0)
+			if (MoveWindow(listview, 0, 0, r.right, r.bottom, TRUE) == 0)
 				panic("error resizing list view");
 		}
 		return 0;
@@ -128,8 +128,6 @@ void buildUI(HWND mainwin)
 #define CSTYLE (WS_CHILD | WS_VISIBLE)
 #define CXSTYLE (0)
 #define SETFONT(hwnd) SendMessage(hwnd, WM_SETFONT, (WPARAM) controlfont, (LPARAM) TRUE);
-
-	HWND listview;
 
 	listview = CreateWindowEx(CXSTYLE,
 		WC_LISTVIEW, L"",

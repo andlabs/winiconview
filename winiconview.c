@@ -158,7 +158,7 @@ void buildUI(HWND mainwin)
 		panic("error creating icon list for list view");
 	if (SendMessage(listview, LVM_SETIMAGELIST,
 		LVSIL_NORMAL, (LPARAM) icons) == (LRESULT) NULL)
-		panic("error giving icon list to list view");
+;//		panic("error giving icon list to list view");
 
 	if (SendMessage(listview, LVM_ENABLEGROUPVIEW,
 		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)
@@ -172,6 +172,8 @@ void buildUI(HWND mainwin)
 		panic("error opening \"%s\": %s", dirname, strerror(errno));
 	for (;;) {
 		struct dirent *entry;
+		char *filename;
+		TCHAR *wfilename;
 
 		errno = 0;
 		entry = readdir(dir);
@@ -180,13 +182,44 @@ void buildUI(HWND mainwin)
 				panic("error reading \"%s\": %s", dirname, strerror(errno));
 			break;		// otherwise, we're done
 		}
-		addGroup(listview, entry->d_name, groupid++);
-		printf("%s\n", entry->d_name);
+
+		if (asprintf(&filename, "%s\\%s", dirname, entry->d_name) == -1)
+			panic("error allocating combined filename %s\\%s: %s",
+				dirname, entry->d_name, strerror(errno));
+		wfilename = toWideString(filename);
+		free(filename);
+
+		UINT i, nIcons;
+
+		addGroup(listview, entry->d_name, groupid);
+
+		nIcons = (UINT) ExtractIcon(hInstance, wfilename, -1);
+		// no need to check for no icons; nothing will happen
+		for (i = 0; i < nIcons; i++) {
+			HICON icon;
+			int index;
+
+			icon = ExtractIcon(hInstance, wfilename, i);
+			if (icon == NULL || icon == (HICON) 1)		// NULL if no icons; 1 if cannot hold icons
+				break;
+			index = ImageList_AddIcon(icons, icon);
+			if (index == -1)
+				panic("error adding icon %u from %s to image list", i, entry->d_name);
+
+			LVITEM item;
+
+			ZeroMemory(&item, sizeof (LVITEM));
+			item.mask = LVIF_IMAGE | LVIF_GROUPID;
+			item.iImage = index;
+			item.iGroupId = groupid;
+			if (SendMessage(listview, LVM_INSERTITEM,
+				(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
+				panic("error adding icon %u from %s to list view", i, entry->d_name);
+		}
+		free(wfilename);
+		groupid++;
 	}
 	closedir(dir);
-
-	addGroup(listview, "Group 1", groupid++);
-	addGroup(listview, "Group 2", groupid++);
 }
 
 void firstShowWindow(HWND hwnd);

@@ -131,6 +131,9 @@ HWND makeMainWindow(void)
 	return hwnd;
 }
 
+TCHAR **groupnames = NULL;		// to store group names for sorting
+int ngroupnames = 0;
+
 void addGroup(HWND listview, char *name, int id)
 {
 	LVGROUP g;
@@ -149,7 +152,28 @@ void addGroup(HWND listview, char *name, int id)
 		(WPARAM) -1, (LPARAM) &g);
 	if (n == (LRESULT) -1)
 		panic("error adding list view group \"%s\"", name);
-	free(wname);		// list views copy the name (thanks maztheman in irc.freenode.net/#winapi)
+	// save the name so we can sort
+	if (ngroupnames < id + 1)
+		ngroupnames = id + 1;
+	groupnames = (TCHAR **) realloc(groupnames, ngroupnames * sizeof (TCHAR *));
+	if (groupnames == NULL)
+		panic("error expanding groupnames list to fit new group name \"%s\"", name);
+	groupnames[id] = wname;		// don't free wname anymore
+}
+
+// MSDN is bugged; http://msdn.microsoft.com/en-us/library/windows/desktop/bb775142%28v=vs.85%29.aspx is missing the CALLBACK, which led to mysterious crashes in wine
+// the CALLBACK is verified from Microsoft's headers instead
+// the headers also say int/void instead of INT/VOID but eh
+INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
+{
+	if (gn1 < 0 || gn1 >= ngroupnames)
+		panic("group ID %d out of range in compare (max %d)", gn1, ngroupnames - 1);
+	if (gn2 < 0 || gn2 >= ngroupnames)
+		panic("group ID %d out of range in compare (max %d)", gn2, ngroupnames - 1);
+	// ignore case; these are filenames
+	// Microsoft says to use the _-prefixed functions (http://msdn.microsoft.com/en-us/library/ms235365.aspx); I wonder why these would be in the C++ standard... (TODO)
+	return _wcsicmp(groupnames[gn1], groupnames[gn2]);
+	// why not just get the group info each time? because we can't get the header length later, at least not as far as I know
 }
 
 void buildUI(HWND mainwin)
@@ -258,6 +282,11 @@ void buildUI(HWND mainwin)
 	// and we're done with the dummy item
 	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)
 		panic("error removing dummy item from list view");
+
+	// now sort the groups in alphabetical order
+	if (SendMessage(listview, LVM_SORTGROUPS,
+		(WPARAM) groupLess, (LPARAM) NULL) == 0)
+		panic("error sorting icon groups by filename");
 }
 
 void firstShowWindow(HWND hwnd);

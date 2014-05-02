@@ -151,6 +151,15 @@ void buildUI(HWND mainwin)
 	if (dummyindex == (LRESULT) -1)
 		panic("error adding dummy item to list view");
 
+	HIMAGELIST icons;
+
+	icons = ImageList_Create(32, 32, ILC_COLOR32, 100, 100);
+	if (icons == NULL)
+		panic("error creating icon list for list view");
+	if (SendMessage(listview, LVM_SETIMAGELIST,
+		LVSIL_NORMAL, (LPARAM) icons) == (LRESULT) NULL)
+		panic("error giving icon list to list view");
+
 	if (SendMessage(listview, LVM_ENABLEGROUPVIEW,
 		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)
 		panic("error enabling groups in list view");

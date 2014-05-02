@@ -67,7 +67,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 			if (GetClientRect(hwnd, &r) == 0)
 				panic("error getting new list view size");
-			if (MoveWindow(listview, 0, 0, r.right, r.bottom, TRUE) == 0)
+			if (MoveWindow(listview, 0, 0, r.right - r.left, r.bottom - r.top, TRUE) == 0)
 				panic("error resizing list view");
 		}
 		return 0;
@@ -137,17 +137,19 @@ void buildUI(HWND mainwin)
 	if (listview == NULL)
 		panic("error creating list view");
 
+	int itemid = 0;
+
 	// we need to have an item to be able to add a group
 	LVITEM dummy;
-	LRESULT dummyindex;	// so we can delete it later
 
 	ZeroMemory(&dummy, sizeof (LVITEM));
 	dummy.mask = LVIF_TEXT;
 	dummy.pszText = L"dummy";
-	dummyindex = SendMessage(listview, LVM_INSERTITEM,
-		0, (LPARAM) &dummy);
-	if (dummyindex == (LRESULT) -1)
+	dummy.iItem = itemid++;
+	if (SendMessage(listview, LVM_INSERTITEM,
+		0, (LPARAM) &dummy) == (LRESULT) -1)
 		panic("error adding dummy item to list view");
+	// the dummy item has index 0
 
 	HIMAGELIST icons;
 
@@ -207,9 +209,14 @@ void buildUI(HWND mainwin)
 			LVITEM item;
 
 			ZeroMemory(&item, sizeof (LVITEM));
-			item.mask = LVIF_IMAGE | LVIF_GROUPID;
+			item.mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
 			item.iImage = index;
 			item.iGroupId = groupid;
+			char *q;
+			asprintf(&q, "%d", itemid);
+			item.pszText = toWideString(q);
+			free(q);
+			item.iItem = itemid++;
 			if (SendMessage(listview, LVM_INSERTITEM,
 				(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
 				panic("error adding icon %u from %s to list view", i, entry->d_name);
@@ -218,6 +225,10 @@ void buildUI(HWND mainwin)
 		groupid++;
 	}
 	closedir(dir);
+
+	// and we're done with the dummy item
+	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)
+		panic("error removing dummy item from list view");
 }
 
 void firstShowWindow(HWND hwnd);

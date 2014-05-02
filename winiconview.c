@@ -5,6 +5,7 @@
 #define _UNICODE
 #define UNICODE
 #define STRICT
+#define STRICT_TYPED_ITEMIDS
 #define _GNU_SOURCE		// needed to declare asprintf()/vasprintf()
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <errno.h>
+#include <shlobj.h>
 
 #ifdef  _MSC_VER
 #error sorry! the scratch windows program relies on mingw-only functionality! (specifically: asprintf(), getopt_long_only(), directory reading facilities)
@@ -50,6 +52,33 @@ BOOL parseArgs(int argc, char *argv[])
 //		return FALSE;
 //	dirname = argv[optind];
 dirname = "C:\\Windows\\System32";
+	if (optind != argc) {
+		HRESULT res;
+		BROWSEINFO bi;
+		PIDLIST_ABSOLUTE pidl;
+
+		// the browse for folders dialog uses COM
+		res = CoInitialize(NULL);
+		if (res != S_OK && res != S_FALSE)
+			panic("error initializing COM for browse for folders dialog");
+		ZeroMemory(&bi, sizeof (BROWSEINFO));
+		// TODO dialog properties
+		pidl = SHBrowseForFolder(&bi);
+		if (pidl != NULL) {
+			// THIS WILL CUT OFF. BIG TODO.
+			TCHAR path[(4 * MAX_PATH) + 1];
+
+			path[0] = L'\0';
+			// TODO resolve shortcuts
+			if (SHGetPathFromIDList(pidl, path) == FALSE)
+				panic("error extracting folder from PIDL from folder dialog");
+			printf("user selected %ws\n", path);
+			CoTaskMemFree(pidl);
+		} else
+			printf("user aborted selection\n");
+		CoUninitialize();
+		exit(0);
+	}
 	return TRUE;
 }
 

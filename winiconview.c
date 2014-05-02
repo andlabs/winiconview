@@ -102,21 +102,25 @@ HWND makeMainWindow(void)
 	return hwnd;
 }
 
-LRESULT addGroup(HWND listview, char *name)
+void addGroup(HWND listview, char *name, int id)
 {
 	LVGROUP g;
 	LRESULT n;
+	TCHAR *wname;
 
 	ZeroMemory(&g, sizeof (LVGROUP));
 	g.cbSize = sizeof (LVGROUP);
-	g.mask = LVGF_HEADER;
-	g.pszHeader = toWideString(name);
-	g.cchHeader = wcslen(g.pszHeader);
+	g.mask = LVGF_HEADER | LVGF_GROUPID;
+	wname = toWideString(name);
+	g.pszHeader = wname;
+	// for some reason the group ID and the index returned by LVM_INSERTGROUP are separate concepts... so we have to provide an ID.
+	// (thanks to roxfan in irc.efnet.net/#winprog for confirming)
+	g.iGroupId = id;
 	n = SendMessage(listview, LVM_INSERTGROUP,
 		(WPARAM) -1, (LPARAM) &g);
 	if (n == (LRESULT) -1)
 		panic("error adding list view group \"%s\"", name);
-	return n;
+	free(wname);		// list views copy the name (thanks maztheman in irc.freenode.net/#winapi)
 }
 
 void buildUI(HWND mainwin)
@@ -135,7 +139,24 @@ void buildUI(HWND mainwin)
 	if (listview == NULL)
 		panic("error creating list view");
 
+	// we need to have an item to be able to add a group
+	LVITEM dummy;
+	LRESULT dummyindex;	// so we can delete it later
+
+	ZeroMemory(&dummy, sizeof (LVITEM));
+	dummy.mask = LVIF_TEXT;
+	dummy.pszText = L"dummy";
+	dummyindex = SendMessage(listview, LVM_INSERTITEM,
+		0, (LPARAM) &dummy);
+	if (dummyindex == (LRESULT) -1)
+		panic("error adding dummy item to list view");
+
+	if (SendMessage(listview, LVM_ENABLEGROUPVIEW,
+		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)
+		panic("error enabling groups in list view");
+
 	DIR *dir;
+	int groupid = 0;
 
 	dir = opendir(dirname);
 	if (dir == NULL)
@@ -150,13 +171,13 @@ void buildUI(HWND mainwin)
 				panic("error reading \"%s\": %s", dirname, strerror(errno));
 			break;		// otherwise, we're done
 		}
-		addGroup(listview, entry->d_name);
+		addGroup(listview, entry->d_name, groupid++);
 		printf("%s\n", entry->d_name);
 	}
 	closedir(dir);
 
-	addGroup(listview, "Group 1");
-	addGroup(listview, "Group 2");
+	addGroup(listview, "Group 1", groupid++);
+	addGroup(listview, "Group 2", groupid++);
 }
 
 void firstShowWindow(HWND hwnd);
@@ -338,20 +359,22 @@ TCHAR *toWideString(char *what)
 	size_t len;
 
 	len = strlen(what);
-	if (len == 0)
-		buf = malloc(sizeof (TCHAR));
-	else {
-		n = MultiByteToWideChar(CP_UTF8, 0, what, len, NULL, 0);
+	if (len == 0) {
+		buf = (TCHAR *) malloc(sizeof (TCHAR));
+		if (buf == NULL)
+			goto mallocfail;
+		buf[0] = L'\0';
+	} else {
+		n = MultiByteToWideChar(CP_UTF8, 0, what, -1, NULL, 0);
 		if (n == 0)
 			panic("error getting number of bytes to convert \"%s\" to UTF-16", what);
 		buf = (TCHAR *) malloc((n + 1) * sizeof (TCHAR));
-	}
-	if (buf == NULL)
-		panic("error allocating memory for UTF-16 version of \"%s\"", what);
-	if (len == 0)
-		buf[0] = L'\0';
-	else
-		if (MultiByteToWideChar(CP_UTF8, 0, what, len, buf, (int) n) == 0)
+		if (buf == NULL)
+			goto mallocfail;
+		if (MultiByteToWideChar(CP_UTF8, 0, what, -1, buf, n) == 0)
 			panic("erorr converting \"%s\" to UTF-16", what);
+	}
 	return buf;
+mallocfail:
+	panic("error allocating memory for UTF-16 version of \"%s\"", what);
 }

@@ -287,6 +287,16 @@ void buildUI(HWND mainwin)
 	if (SendMessage(listview, LVM_SORTGROUPS,
 		(WPARAM) groupLess, (LPARAM) NULL) == 0)
 		panic("error sorting icon groups by filename");
+
+	// and now some extended styles
+	// the mask (WPARAM) defines which bits of the value (LPARAM) are to be changed
+	// all other bits are ignored
+	// so to set just the ones we specify, keeping any other styles intact, set both to the same value
+	// MSDN says this returns the previous styles, with no mention of an error condition
+#define xstyle 0	// TODO LVS_EX_BORDERSELECT?
+	if (xstyle != 0)
+		SendMessage(listview, LVM_SETEXTENDEDLISTVIEWSTYLE,
+			xstyle, xstyle);
 }
 
 void firstShowWindow(HWND hwnd);

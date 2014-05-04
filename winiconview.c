@@ -30,18 +30,23 @@ TCHAR *toWideString(char *what);
 
 TCHAR *dirname = NULL;
 
-void init(int argc, char *argv[])
+void init(void)
 {
 	int usageret = EXIT_FAILURE;
+	int argc;
+	TCHAR **argv;
 
+	argv = CommandLineToArgvW(GetCommandLine(), &argc);
+	if (argv == NULL)
+		panic("error splitting command line into argc/argv form");
 	if (argc > 2)
 		goto usage;
 	if (argc == 2) {
-		if (strcmp(argv[1], "--help") == 0) {
+		if (wcscmp(argv[1], L"--help") == 0) {
 			usageret = 0;
 			goto usage;
 		}
-//	dirname = toWideString(argv[optind]);
+//	dirname = argv[optind];
 dirname = L"C:\\Windows\\System32";
 	} else {
 		HRESULT res;
@@ -73,7 +78,7 @@ dirname = L"C:\\Windows\\System32";
 	return;
 
 usage:
-	fprintf(stderr,  "usage: %s\n\t%s pathname\n\t%s --help\n",
+	fprintf(stderr,  "usage: %S\n\t%S pathname\n\t%S --help\n",
 		argv[0], argv[0], argv[0]);
 	exit(usageret);
 }
@@ -315,17 +320,20 @@ void buildUI(HWND mainwin)
 void firstShowWindow(HWND hwnd);
 void initwin(void);
 
-int main(int argc, char *argv[])
+int CALLBACK WinMain(HINSTANCE _hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	HWND mainwin;
 	MSG msg;
 
-	init(argc, argv);
+	init();
+	hInstance = _hInstance;
 	initwin();
 
 	mainwin = makeMainWindow();
 	buildUI(mainwin);
-	firstShowWindow(mainwin);
+	ShowWindow(mainwin, nCmdShow);
+	if (UpdateWindow(mainwin) == 0)
+		panic("UpdateWindow(mainwin) failed in first show");
 
 	for (;;) {
 		BOOL gmret;
@@ -366,9 +374,6 @@ void initwin(void)
 	INITCOMMONCONTROLSEX icc;
 	NONCLIENTMETRICS ncm;
 
-	hInstance = GetModuleHandle(NULL);
-	if (hInstance == NULL)
-		panic("error getting hInstance");
 	hDefaultIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_APPLICATION));
 	if (hDefaultIcon == NULL)
 		panic("error getting default window class icon");
@@ -418,23 +423,13 @@ void panic(char *fmt, ...)
 		abort();
 	}
 	fprintf(stderr, "%s\n", fullmsg);
+	MessageBoxA(NULL,		// TODO both the function name and the NULL
+		fullmsg,
+		"PANIC",			// TODO
+		MB_OK | MB_ICONERROR | MB_SYSTEMMODAL);
+	// TODO find a reasonable way to handle failures in the MessageBox() call?
 	va_end(arg);
 	exit(1);
-}
-
-void firstShowWindow(HWND hwnd)
-{
-	// we need to get nCmdShow
-	int nCmdShow;
-	STARTUPINFO si;
-
-	nCmdShow = SW_SHOWDEFAULT;
-	GetStartupInfo(&si);
-	if ((si.dwFlags & STARTF_USESHOWWINDOW) != 0)
-		nCmdShow = si.wShowWindow;
-	ShowWindow(hwnd, nCmdShow);
-	if (UpdateWindow(hwnd) == 0)
-		panic("UpdateWindow(hwnd) failed in first show");
 }
 
 TCHAR *toWideString(char *what)

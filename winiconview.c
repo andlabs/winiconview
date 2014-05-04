@@ -212,6 +212,9 @@ INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 	// why not just get the group info each time? because we can't get the header length later, at least not as far as I know
 }
 
+void ourWow64DisableWow64FsRedirection(PVOID *);
+void ourWow64RevertWow64FsRedirection(PVOID);
+
 void buildUI(HWND mainwin)
 {
 #define CSTYLE (WS_CHILD | WS_VISIBLE)
@@ -264,8 +267,7 @@ void buildUI(HWND mainwin)
 	TCHAR finddir[MAX_PATH + 1];
 	int groupid = 0;
 
-	if (Wow64DisableWow64FsRedirection(&wow64token) == 0)
-		panic("error disabling WOW64 pathname redirection");
+	ourWow64DisableWow64FsRedirection(&wow64token);
 	if (PathCombine(finddir, dirname, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
 		panic("error producing version of \"%S\" for FindFirstFile()", dirname);
 	dir = FindFirstFile(finddir, &entry);
@@ -351,8 +353,7 @@ void buildUI(HWND mainwin)
 	}
 	if (FindClose(dir) == 0)
 		panic("error closing \"%S\"", dirname);
-	if (Wow64RevertWow64FsRedirection(wow64token) == FALSE)
-		panic("error re-enabling WOW64 pathname redirection");
+	ourWow64RevertWow64FsRedirection(wow64token);
 
 	// and we're done with the dummy item
 	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)
@@ -514,4 +515,35 @@ TCHAR *toWideString(char *what)
 	return buf;
 mallocfail:
 	panic("error allocating memory for UTF-16 version of \"%s\"", what);
+}
+
+BOOL wow64loaded = FALSE;
+BOOL (WINAPI *wow64disable)(PVOID *);
+BOOL (WINAPI *wow64enable)(PVOID);
+
+void ourWow64DisableWow64FsRedirection(PVOID *token)
+{
+	if (!wow64loaded) {
+		HMODULE kernel32;
+
+		kernel32 = GetModuleHandle(L"kernel32.dll");
+		if (kernel32 == NULL)
+			panic("error loading kernel32.dll for Wow64DisableWow64FsRedirection()/Wow64RevertWow64FsRedirection() dynamic loading");
+		// GetProcAddress() seems to always take non-Unicode strings... and the WINAPI is in the (*) parentheses... why for both? TODO
+		wow64disable = (BOOL (WINAPI *)(PVOID *)) GetProcAddress(kernel32, "Wow64DisableWow64FsRedirection");
+		wow64enable = (BOOL (WINAPI *)(PVOID)) GetProcAddress(kernel32, "Wow64RevertWow64FsRedirection");
+		wow64loaded = TRUE;
+	}
+	if (wow64disable == NULL)
+		return;
+	if ((*wow64disable)(token) == 0)
+		panic("error disabling WOW64 pathname redirection");
+}
+
+void ourWow64RevertWow64FsRedirection(PVOID token)
+{
+	if (wow64enable == NULL)
+		return;
+	if ((*wow64enable)(token) == FALSE)
+		panic("error re-enabling WOW64 pathname redirection");
 }

@@ -89,10 +89,30 @@ usage:
 }
 
 HWND listview = NULL;
+#define ID_LISTVIEW 100
 
 LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
+	NMHDR *nmhdr;
+
 	switch (msg) {
+	case WM_NOTIFY:
+		nmhdr = (NMHDR *) lparam;
+		if (nmhdr->idFrom == ID_LISTVIEW) {
+			int times = 1;
+
+			// TODO needed?
+			if (nmhdr->code == NM_RDBLCLK) {	// turn double-clicks into two single-clicks
+				times = 2;
+				nmhdr->code = NM_CLICK;
+			}
+			if (nmhdr->code == NM_RCLICK) {
+				for (; times != 0; times--)
+					printf("right click %d\n", times);		// TODO
+				return 1;
+			}
+		}
+		return 0;
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		return 0;
@@ -191,7 +211,7 @@ void buildUI(HWND mainwin)
 		WC_LISTVIEW, L"",
 		LVS_ICON | WS_VSCROLL | CSTYLE,
 		0, 0, 100, 100,
-		mainwin, NULL, hInstance, NULL);
+		mainwin, (HMENU) ID_LISTVIEW, hInstance, NULL);
 	if (listview == NULL)
 		panic("error creating list view");
 

@@ -217,6 +217,8 @@ INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 void ourWow64DisableWow64FsRedirection(PVOID *);
 void ourWow64RevertWow64FsRedirection(PVOID);
 
+void addIcons(UINT, HICON *, HICON *, int, int *, TCHAR *);
+
 void buildUI(HWND mainwin)
 {
 #define CSTYLE (WS_CHILD | WS_VISIBLE)
@@ -296,7 +298,6 @@ void buildUI(HWND mainwin)
 
 		nIcons = (UINT) ExtractIcon(hInstance, filename, -1);
 		if (nIcons != 0) {
-			UINT i;
 			HICON *large, *small;
 
 			addGroup(listview, entry.cFileName, groupid);
@@ -311,32 +312,7 @@ void buildUI(HWND mainwin)
 				panic("error extracting large icons from \"%S\"", filename);
 			if (ExtractIconEx(filename, 0, NULL, small, nIcons) != nIcons)
 				panic("error extracting small icons from \"%S\"", filename);
-			for (i = 0; i < nIcons; i++) {
-				int index, i2;
-				LVITEM item;
-
-				index = ImageList_AddIcon(largeicons, large[i]);
-				if (index == -1)
-					panic("error adding icon %u from \"%S\" to large icon list", i, filename);
-				i2 = ImageList_AddIcon(smallicons, small[i]);
-				if (i2 == -1)
-					panic("error adding icon %u from \"%S\" to small icon list", i, filename);
-				if (index != i2)
-					panic("internal inconsistency: indices of icon %u from \"%S\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
-
-				ZeroMemory(&item, sizeof (LVITEM));
-				item.mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
-				item.iImage = index;
-				item.iGroupId = groupid;
-				char *q;
-				asprintf(&q, "%d", itemid);
-				item.pszText = toWideString(q);
-				free(q);
-				item.iItem = itemid++;
-				if (SendMessage(listview, LVM_INSERTITEM,
-					(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
-					panic("error adding icon %u from %S to list view", i, entry.cFileName);
-			}
+			addIcons(nIcons, large, small, groupid, &itemid, filename);
 			free(large);
 			free(small);
 
@@ -375,6 +351,37 @@ void buildUI(HWND mainwin)
 	if (xstyle != 0)
 		SendMessage(listview, LVM_SETEXTENDEDLISTVIEWSTYLE,
 			xstyle, xstyle);
+}
+
+void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid, TCHAR *filename)
+{
+	UINT i;
+	int index, i2;
+	LVITEM item;
+
+	for (i = 0; i < nIcons; i++) {
+		index = ImageList_AddIcon(largeicons, large[i]);
+		if (index == -1)
+			panic("error adding icon %u from \"%S\" to large icon list", i, filename);
+		i2 = ImageList_AddIcon(smallicons, small[i]);
+		if (i2 == -1)
+			panic("error adding icon %u from \"%S\" to small icon list", i, filename);
+		if (index != i2)
+			panic("internal inconsistency: indices of icon %u from \"%S\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
+
+		ZeroMemory(&item, sizeof (LVITEM));
+		item.mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
+		item.iImage = index;
+		item.iGroupId = groupid;
+		char *q;
+		asprintf(&q, "%d", *itemid);
+		item.pszText = toWideString(q);
+		free(q);
+		item.iItem = (*itemid)++;
+		if (SendMessage(listview, LVM_INSERTITEM,
+			(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
+			panic("error adding icon %u from \"%S\" to list view", i, filename);
+	}
 }
 
 void firstShowWindow(HWND hwnd);

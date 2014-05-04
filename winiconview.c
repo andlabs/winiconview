@@ -203,7 +203,8 @@ void buildUI(HWND mainwin)
 
 	HIMAGELIST icons;
 
-	icons = ImageList_Create(32, 32, ILC_COLOR32, 100, 100);
+	icons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
+		ILC_COLOR32, 100, 100);
 	if (icons == NULL)
 		panic("error creating icon list for list view");
 	if (SendMessage(listview, LVM_SETIMAGELIST,

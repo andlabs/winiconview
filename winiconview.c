@@ -90,6 +90,8 @@ usage:
 
 HWND listview = NULL;
 #define ID_LISTVIEW 100
+HIMAGELIST largeicons, smallicons;
+HIMAGELIST iconlists[2];
 
 LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -107,8 +109,17 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 				nmhdr->code = NM_CLICK;
 			}
 			if (nmhdr->code == NM_RCLICK) {
-				for (; times != 0; times--)
+				for (; times != 0; times--) {
+					HIMAGELIST temp;
+
 					printf("right click %d\n", times);		// TODO
+					temp = iconlists[0];
+					iconlists[0] = iconlists[1];
+					iconlists[1] = temp;
+					if (SendMessage(listview, LVM_SETIMAGELIST,
+						LVSIL_NORMAL, (LPARAM) iconlists[0]) == (LRESULT) NULL)
+						panic("error swapping list view icon lists");
+				}
 				return 1;
 			}
 		}
@@ -229,8 +240,6 @@ void buildUI(HWND mainwin)
 		panic("error adding dummy item to list view");
 	// the dummy item has index 0
 
-	HIMAGELIST largeicons, smallicons;
-
 	largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
 		ILC_COLOR32, 100, 100);
 	if (largeicons == NULL)
@@ -242,6 +251,8 @@ void buildUI(HWND mainwin)
 	if (SendMessage(listview, LVM_SETIMAGELIST,
 		LVSIL_NORMAL, (LPARAM) largeicons) == (LRESULT) NULL)
 ;//		panic("error giving large icon list to list view");
+	iconlists[0] = largeicons;
+	iconlists[1] = smallicons;
 
 	if (SendMessage(listview, LVM_ENABLEGROUPVIEW,
 		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)

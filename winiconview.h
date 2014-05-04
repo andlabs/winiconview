@@ -18,3 +18,10 @@ void panic(char *fmt, ...);
 TCHAR *toWideString(char *what);
 void ourWow64DisableWow64FsRedirection(PVOID *);
 void ourWow64RevertWow64FsRedirection(PVOID);
+
+// the rest of this file is geticons.c
+
+extern HIMAGELIST largeicons, smallicons;
+
+void getIcons(void);
+INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data);

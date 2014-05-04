@@ -204,14 +204,14 @@ void buildUI(HWND mainwin)
 		panic("error adding dummy item to list view");
 	// the dummy item has index 0
 
-	HIMAGELIST icons;
+	HIMAGELIST largeicons;
 
-	icons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
+	largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
 		ILC_COLOR32, 100, 100);
-	if (icons == NULL)
+	if (largeicons == NULL)
 		panic("error creating icon list for list view");
 	if (SendMessage(listview, LVM_SETIMAGELIST,
-		LVSIL_NORMAL, (LPARAM) icons) == (LRESULT) NULL)
+		LVSIL_NORMAL, (LPARAM) largeicons) == (LRESULT) NULL)
 ;//		panic("error giving icon list to list view");
 
 	if (SendMessage(listview, LVM_ENABLEGROUPVIEW,
@@ -249,21 +249,23 @@ void buildUI(HWND mainwin)
 				dirname, entry.cFileName);
 
 		UINT i, nIcons;
+		HICON *large, *small;
 
 		addGroup(listview, entry.cFileName, groupid);
 
 		nIcons = (UINT) ExtractIcon(hInstance, filename, -1);
+		large = (HICON *) malloc(nIcons * sizeof (HICON));
+		if (large == NULL)
+			panic("error allocating array of large icons for \"%S\"", filename);
+		if (ExtractIconEx(filename, 0, large, NULL, nIcons) != nIcons)
+			panic("error extracting large icons from \"%S\"", filename);
 		// no need to check for no icons; nothing will happen
 		for (i = 0; i < nIcons; i++) {
-			HICON icon;
 			int index;
 
-			icon = ExtractIcon(hInstance, filename, i);
-			if (icon == NULL || icon == (HICON) 1)		// NULL if no icons; 1 if cannot hold icons
-				break;
-			index = ImageList_AddIcon(icons, icon);
+			index = ImageList_AddIcon(largeicons, large[i]);
 			if (index == -1)
-				panic("error adding icon %u from %S to image list", i, entry.cFileName);
+				panic("error adding icon %u from \"%S\" to large icon list", i, filename);
 
 			LVITEM item;
 
@@ -280,6 +282,7 @@ void buildUI(HWND mainwin)
 				(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
 				panic("error adding icon %u from %S to list view", i, entry.cFileName);
 		}
+		free(large);
 		groupid++;
 
 		if (FindNextFile(dir, &entry) == 0) {

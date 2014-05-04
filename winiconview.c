@@ -259,7 +259,7 @@ void buildUI(HWND mainwin)
 
 			large = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (large == NULL)
-				panic("error allocating array of large icons for \"%S\"", filename)
+				panic("error allocating array of large icon handles for \"%S\"", filename);
 			if (ExtractIconEx(filename, 0, large, NULL, nIcons) != nIcons)
 				panic("error extracting large icons from \"%S\"", filename);
 			for (i = 0; i < nIcons; i++) {

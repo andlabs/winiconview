@@ -1,42 +1,47 @@
 // 4 may 2014
 #include "winiconview.h"
 
-// TODO get rid of the need for these
-extern HWND listview;
-extern TCHAR *dirname;
-extern HANDLE hInstance;
-
 HIMAGELIST largeicons, smallicons;
+LVGROUP *groups = NULL;
+size_t nGroups = 0;
+LVITEM *items = NULL;
+size_t nItems = 0;
+
+static size_t nGroupsAlloc = 0, nItemsAlloc = 0;
 
 static TCHAR **groupnames = NULL;		// to store group names for sorting
 static int ngroupnames = 0;
 
-static void addGroup(HWND listview, TCHAR *name, int id)
+static void addGroup(TCHAR *name, int id)
 {
-	LVGROUP g;
+	LVGROUP *g;
 	LRESULT n;
 	TCHAR *wname;
 
-	ZeroMemory(&g, sizeof (LVGROUP));
-	g.cbSize = sizeof (LVGROUP);
-	g.mask = LVGF_HEADER | LVGF_GROUPID;
-	g.pszHeader = name;
+	if (nGroups >= nGroupsAlloc) {		// need more memory
+		nGroupsAlloc += 200;		// will handle first run too
+		groups = (LVGROUP *) realloc(groups, nGroupsAlloc * sizeof(LVGROUP));
+		if (groups == NULL)
+			panic("error allocating room for list view groups");
+	}
+	g = &groups[nGroups++];
+	ZeroMemory(g, sizeof (LVGROUP));
+	g->cbSize = sizeof (LVGROUP);
+	g->mask = LVGF_HEADER | LVGF_GROUPID;
+	g->pszHeader = _wcsdup(name);
+	if (g->pszHeader == NULL)
+		panic("error making copy of filename %S for grouping/sorting", name);
 	// for some reason the group ID and the index returned by LVM_INSERTGROUP are separate concepts... so we have to provide an ID.
 	// (thanks to roxfan in irc.efnet.net/#winprog for confirming)
-	g.iGroupId = id;
-	n = SendMessage(listview, LVM_INSERTGROUP,
-		(WPARAM) -1, (LPARAM) &g);
-	if (n == (LRESULT) -1)
-		panic("error adding list view group \"%S\"", name);
+	g->iGroupId = id;
+
 	// save the name so we can sort
 	if (ngroupnames < id + 1)
 		ngroupnames = id + 1;
 	groupnames = (TCHAR **) realloc(groupnames, ngroupnames * sizeof (TCHAR *));
 	if (groupnames == NULL)
 		panic("error expanding groupnames list to fit new group name \"%s\"", name);
-	groupnames[id] = _wcsdup(name);
-	if (groupnames[id] == NULL)
-		panic("error making copy of filename %S for sorting", name);
+	groupnames[id] = g->pszHeader;
 }
 
 // MSDN is bugged; http://msdn.microsoft.com/en-us/library/windows/desktop/bb775142%28v=vs.85%29.aspx is missing the CALLBACK, which led to mysterious crashes in wine
@@ -57,7 +62,7 @@ INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 static void addIcons(UINT, HICON *, HICON *, int, int *, TCHAR *);
 static void addInvalidIcon(int, int *, TCHAR *);
 
-void getIcons(void)
+void getIcons(TCHAR *dirname)
 {
 	int itemid = 1;		// 0 is the dummy item
 
@@ -107,7 +112,7 @@ void getIcons(void)
 			UINT nlarge, nsmall;
 			UINT nStart = 0;
 
-			addGroup(listview, entry.cFileName, groupid);
+			addGroup(entry.cFileName, groupid);
 
 			large = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (large == NULL)
@@ -152,11 +157,22 @@ void getIcons(void)
 	ourWow64RevertWow64FsRedirection(wow64token);
 }
 
+static LVITEM *addItem(void)
+{
+	if (nItems >= nItemsAlloc) {		// need more memory
+		nItemsAlloc += 200;			// will handle first run too
+		items = (LVITEM *) realloc(items, nItemsAlloc * sizeof (LVITEM));
+		if (items == NULL)
+			panic("error allocating room for list view items");
+	}
+	return &items[nItems++];
+}
+
 static void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid, TCHAR *filename)
 {
 	UINT i;
 	int index, i2;
-	LVITEM item;
+	LVITEM *item;
 
 	for (i = 0; i < nIcons; i++) {
 		index = ImageList_AddIcon(largeicons, large[i]);
@@ -170,36 +186,32 @@ static void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *
 		if (index != i2)
 			panic("internal inconsistency: indices of icon %u from \"%S\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
 
-		ZeroMemory(&item, sizeof (LVITEM));
-		item.mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
-		item.iImage = index;
-		item.iGroupId = groupid;
+		item = addItem();
+		ZeroMemory(item, sizeof (LVITEM));
+		item->mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
+		item->iImage = index;
+		item->iGroupId = groupid;
 		char *q;
 		asprintf(&q, "%d", *itemid);
-		item.pszText = toWideString(q);
+		item->pszText = toWideString(q);
 		free(q);
-		item.iItem = (*itemid)++;
-		if (SendMessage(listview, LVM_INSERTITEM,
-			(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
-			panic("error adding icon %u from \"%S\" to list view", i, filename);
+		item->iItem = (*itemid)++;
 		// TODO above errors (note plural) needs to be changed to represent the correct icon count
 	}
 }
 
 static void addInvalidIcon(int groupid, int *itemid, TCHAR *filename)
 {
-	LVITEM item;
+	LVITEM *item;
 
 	// TODO prevent an icon from being shown for these?
-	ZeroMemory(&item, sizeof (LVITEM));
-	item.mask = LVIF_GROUPID | LVIF_TEXT;
-	item.iGroupId = groupid;
+	item = addItem();
+	ZeroMemory(item, sizeof (LVITEM));
+	item->mask = LVIF_GROUPID | LVIF_TEXT;
+	item->iGroupId = groupid;
 	char *q;
 	asprintf(&q, "%d (invalid)", *itemid);
-	item.pszText = toWideString(q);
+	item->pszText = toWideString(q);
 	free(q);
-	item.iItem = (*itemid)++;
-	if (SendMessage(listview, LVM_INSERTITEM,
-		(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
-		panic("error adding invalid icon from \"%S\" to list view", filename);
+	item->iItem = (*itemid)++;
 }

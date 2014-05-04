@@ -166,6 +166,14 @@ void buildUI(HWND mainwin)
 	if (listview == NULL)
 		panic("error creating list view");
 
+	getIcons(dirname);
+
+	if (SendMessage(listview, LVM_SETIMAGELIST,
+		LVSIL_NORMAL, (LPARAM) largeicons) == (LRESULT) NULL)
+;//		panic("error giving large icon list to list view");
+	iconlists[0] = largeicons;
+	iconlists[1] = smallicons;
+
 	// we need to have an item to be able to add a group
 	LVITEM dummy;
 
@@ -174,7 +182,7 @@ void buildUI(HWND mainwin)
 	dummy.pszText = L"dummy";
 	dummy.iItem = 0;
 	if (SendMessage(listview, LVM_INSERTITEM,
-		0, (LPARAM) &dummy) == (LRESULT) -1)
+		(WPARAM) 0, (LPARAM) &dummy) == (LRESULT) -1)
 		panic("error adding dummy item to list view");
 	// the dummy item has index 0
 
@@ -182,13 +190,16 @@ void buildUI(HWND mainwin)
 		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)
 		panic("error enabling groups in list view");
 
-	getIcons();
+	size_t i;
 
-	if (SendMessage(listview, LVM_SETIMAGELIST,
-		LVSIL_NORMAL, (LPARAM) largeicons) == (LRESULT) NULL)
-;//		panic("error giving large icon list to list view");
-	iconlists[0] = largeicons;
-	iconlists[1] = smallicons;
+	for (i = 0; i < nGroups; i++)
+		if (SendMessage(listview, LVM_INSERTGROUP,
+			(WPARAM) -1, (LPARAM) &groups[i]) == (LRESULT) -1)
+			panic("error adding group \"%S\" to list view", groups[i].pszHeader);
+	for (i = 0; i < nItems; i++)
+		if (SendMessage(listview, LVM_INSERTITEM,
+			(WPARAM) 0, (LPARAM) &items[i]) == (LRESULT) -1)
+			panic("error adding item \"%S\" to list view", items[i].pszText);
 
 	// and we're done with the dummy item
 	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)

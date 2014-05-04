@@ -13,6 +13,9 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 
+// winiconview.c
+extern HINSTANCE hInstance;
+
 // util.c
 void panic(char *fmt, ...);
 TCHAR *toWideString(char *what);
@@ -22,6 +25,9 @@ void ourWow64RevertWow64FsRedirection(PVOID);
 // the rest of this file is geticons.c
 
 extern HIMAGELIST largeicons, smallicons;
+extern LVGROUP *groups;
+extern LVITEM *items;
+extern size_t nGroups, nItems;
 
-void getIcons(void);
+void getIcons(TCHAR *);
 INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data);

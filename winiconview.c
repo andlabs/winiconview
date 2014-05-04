@@ -248,42 +248,46 @@ void buildUI(HWND mainwin)
 			panic("error allocating combined filename \"%S\\%S\"",
 				dirname, entry.cFileName);
 
-		UINT i, nIcons;
-		HICON *large, *small;
-
-		addGroup(listview, entry.cFileName, groupid);
+		UINT nIcons;
 
 		nIcons = (UINT) ExtractIcon(hInstance, filename, -1);
-		large = (HICON *) malloc(nIcons * sizeof (HICON));
-		if (large == NULL)
-			panic("error allocating array of large icons for \"%S\"", filename);
-		if (ExtractIconEx(filename, 0, large, NULL, nIcons) != nIcons)
-			panic("error extracting large icons from \"%S\"", filename);
-		// no need to check for no icons; nothing will happen
-		for (i = 0; i < nIcons; i++) {
-			int index;
+		if (nIcons != 0) {
+			UINT i;
+			HICON *large, *small;
 
-			index = ImageList_AddIcon(largeicons, large[i]);
-			if (index == -1)
-				panic("error adding icon %u from \"%S\" to large icon list", i, filename);
+			addGroup(listview, entry.cFileName, groupid);
 
-			LVITEM item;
+			large = (HICON *) malloc(nIcons * sizeof (HICON));
+			if (large == NULL)
+				panic("error allocating array of large icons for \"%S\"", filename);
+			if (ExtractIconEx(filename, 0, large, NULL, nIcons) != nIcons)
+				panic("error extracting large icons from \"%S\"", filename);
 
-			ZeroMemory(&item, sizeof (LVITEM));
-			item.mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
-			item.iImage = index;
-			item.iGroupId = groupid;
-			char *q;
-			asprintf(&q, "%d", itemid);
-			item.pszText = toWideString(q);
-			free(q);
-			item.iItem = itemid++;
-			if (SendMessage(listview, LVM_INSERTITEM,
-				(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
-				panic("error adding icon %u from %S to list view", i, entry.cFileName);
+			for (i = 0; i < nIcons; i++) {
+				int index;
+				LVITEM item;
+
+				index = ImageList_AddIcon(largeicons, large[i]);
+				if (index == -1)
+					panic("error adding icon %u from \"%S\" to large icon list", i, filename);
+				ZeroMemory(&item, sizeof (LVITEM));
+				item.mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
+				item.iImage = index;
+				item.iGroupId = groupid;
+				char *q;
+				asprintf(&q, "%d", itemid);
+				item.pszText = toWideString(q);
+				free(q);
+				item.iItem = itemid++;
+				if (SendMessage(listview, LVM_INSERTITEM,
+					(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
+					panic("error adding icon %u from %S to list view", i, entry.cFileName);
+			}
+
+			free(large);
+
+			groupid++;
 		}
-		free(large);
-		groupid++;
 
 		if (FindNextFile(dir, &entry) == 0) {
 			DWORD e;

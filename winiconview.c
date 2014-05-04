@@ -217,9 +217,12 @@ void buildUI(HWND mainwin)
 
 	HANDLE dir;
 	WIN32_FIND_DATA entry;
+	PVOID ;
 	TCHAR finddir[MAX_PATH + 1];
 	int groupid = 0;
 
+	if (Wow64DisableWow64FsRedirection(&wow64token) == 0)
+		panic("error disabling WOW64 pathname redirection");
 	if (PathCombine(finddir, dirname, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
 		panic("error producing version of \"%S\" for FindFirstFile()", dirname);
 	dir = FindFirstFile(finddir, &entry);
@@ -288,6 +291,8 @@ void buildUI(HWND mainwin)
 	}
 	if (FindClose(dir) == 0)
 		panic("error closing \"%S\"", dirname);
+	if (Wow64RevertWow64FsRedirection(wow64token) == FALSE)
+		panic("error re-enabling WOW64 pathname redirection");
 
 	// and we're done with the dummy item
 	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)

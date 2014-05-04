@@ -377,7 +377,7 @@ void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid,
 		index = ImageList_AddIcon(largeicons, large[i]);
 		if (index == -1)
 			panic("error adding icon %u from \"%S\" to large icon list", i, filename);
-		DestroyIcon(large[i]);		// the image list seems to keep a copy of the icon; destroy the original to avoid running up against memory limits
+		DestroyIcon(large[i]);		// the image list seems to keep a copy of the icon; destroy the original to avoid running up against memory limits (TODO verify against documentation; it confused me at first)
 		i2 = ImageList_AddIcon(smallicons, small[i]);
 		if (i2 == -1)
 			panic("error adding icon %u from \"%S\" to small icon list (%p)", i, filename, small[i]);

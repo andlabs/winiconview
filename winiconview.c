@@ -568,14 +568,22 @@ BOOL (WINAPI *wow64enable)(PVOID);
 void ourWow64DisableWow64FsRedirection(PVOID *token)
 {
 	if (!wow64loaded) {
-		HMODULE kernel32;
+		BOOL b;
 
-		kernel32 = GetModuleHandle(L"kernel32.dll");
-		if (kernel32 == NULL)
-			panic("error loading kernel32.dll for Wow64DisableWow64FsRedirection()/Wow64RevertWow64FsRedirection() dynamic loading");
-		// GetProcAddress() seems to always take non-Unicode strings... and the WINAPI is in the (*) parentheses... why for both? TODO
-		wow64disable = (BOOL (WINAPI *)(PVOID *)) GetProcAddress(kernel32, "Wow64DisableWow64FsRedirection");
-		wow64enable = (BOOL (WINAPI *)(PVOID)) GetProcAddress(kernel32, "Wow64RevertWow64FsRedirection");
+		// the functions seem to fail with a last error ERROR_INVALID_FUNCTION when run as a 64-bit process, so don't load them then
+		if (IsWow64Process(GetCurrentProcess(), &b) == 0)
+			panic("IsWow64Process() failed during Wow64DisableWow64FsRedirection()/Wow64RevertWow64FsRedirection() dynamic loading");
+		if (b) {		// on 32-bit, so try
+			HMODULE kernel32;
+
+			kernel32 = GetModuleHandle(L"kernel32.dll");
+			if (kernel32 == NULL)
+				panic("error loading kernel32.dll for Wow64DisableWow64FsRedirection()/Wow64RevertWow64FsRedirection() dynamic loading");
+			// GetProcAddress() seems to always take non-Unicode strings... and the WINAPI is in the (*) parentheses... why for both? TODO
+			wow64disable = (BOOL (WINAPI *)(PVOID *)) GetProcAddress(kernel32, "Wow64DisableWow64FsRedirection");
+			wow64enable = (BOOL (WINAPI *)(PVOID)) GetProcAddress(kernel32, "Wow64RevertWow64FsRedirection");
+		}
+		// otherwise keep them no-ops so we can just skip them
 		wow64loaded = TRUE;
 	}
 	if (wow64disable == NULL)

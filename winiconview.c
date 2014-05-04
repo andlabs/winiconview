@@ -47,7 +47,12 @@ void init(void)
 			goto usage;
 		}
 //	dirname = argv[optind];
+BOOL b;
+if (IsWow64Process(GetCurrentProcess(), &b) == 0)
+	panic("IsWow64Process() failed");
 dirname = L"C:\\Windows\\System32";
+if (b)
+dirname = L"C:\\Windows\\SysWow64";
 	} else {
 		HRESULT res;
 		BROWSEINFO bi;

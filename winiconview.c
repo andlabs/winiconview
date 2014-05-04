@@ -14,13 +14,11 @@
 #include <getopt.h>
 #include <windows.h>
 #include <commctrl.h>		// needed for InitCommonControlsEx() (thanks Xeek in irc.freenode.net/#winapi for confirming)
-#include <sys/types.h>
-#include <dirent.h>
-#include <errno.h>
 #include <shlobj.h>
+#include <shlwapi.h>
 
 #ifdef  _MSC_VER
-#error sorry! the scratch windows program relies on mingw-only functionality! (specifically: asprintf(), getopt_long_only(), directory reading facilities)
+#error sorry! the scratch windows program relies on mingw-only functionality! (specifically: asprintf(), getopt_long_only())
 #endif
 
 // cheating: we store the help string in the flag argument, collect them, then overwrite them with NULL in init() so getopt_long_only() will return val and not overwrite a string (apparently I'm not the first to think of this: GerbilSoft says GNU tools do this too)
@@ -42,7 +40,7 @@ TCHAR *toWideString(char *what);
 
 void init(int argc, char *argv[]);
 
-char *dirname = NULL;
+TCHAR *dirname = NULL;
 
 char *args = "dir";		// other command-line arguments here, if any
 
@@ -50,8 +48,8 @@ BOOL parseArgs(int argc, char *argv[])
 {
 //	if (optind != argc - 1)		// equivalent to argc != 2
 //		return FALSE;
-//	dirname = argv[optind];
-dirname = "C:\\Windows\\System32";
+//	dirname = toWideString(argv[optind]);
+dirname = L"C:\\Windows\\System32";
 	if (optind != argc) {
 		HRESULT res;
 		BROWSEINFO bi;
@@ -134,7 +132,7 @@ HWND makeMainWindow(void)
 TCHAR **groupnames = NULL;		// to store group names for sorting
 int ngroupnames = 0;
 
-void addGroup(HWND listview, char *name, int id)
+void addGroup(HWND listview, TCHAR *name, int id)
 {
 	LVGROUP g;
 	LRESULT n;
@@ -143,8 +141,7 @@ void addGroup(HWND listview, char *name, int id)
 	ZeroMemory(&g, sizeof (LVGROUP));
 	g.cbSize = sizeof (LVGROUP);
 	g.mask = LVGF_HEADER | LVGF_GROUPID;
-	wname = toWideString(name);
-	g.pszHeader = wname;
+	g.pszHeader = name;
 	// for some reason the group ID and the index returned by LVM_INSERTGROUP are separate concepts... so we have to provide an ID.
 	// (thanks to roxfan in irc.efnet.net/#winprog for confirming)
 	g.iGroupId = id;
@@ -158,7 +155,7 @@ void addGroup(HWND listview, char *name, int id)
 	groupnames = (TCHAR **) realloc(groupnames, ngroupnames * sizeof (TCHAR *));
 	if (groupnames == NULL)
 		panic("error expanding groupnames list to fit new group name \"%s\"", name);
-	groupnames[id] = wname;		// don't free wname anymore
+	groupnames[id] = _wcsdup(name);
 }
 
 // MSDN is bugged; http://msdn.microsoft.com/en-us/library/windows/desktop/bb775142%28v=vs.85%29.aspx is missing the CALLBACK, which led to mysterious crashes in wine
@@ -217,47 +214,49 @@ void buildUI(HWND mainwin)
 		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)
 		panic("error enabling groups in list view");
 
-	DIR *dir;
+	HANDLE dir;
+	WIN32_FIND_DATA entry;
+	TCHAR finddir[MAX_PATH + 1];
 	int groupid = 0;
 
-	dir = opendir(dirname);
-	if (dir == NULL)
-		panic("error opening \"%s\": %s", dirname, strerror(errno));
-	for (;;) {
-		struct dirent *entry;
-		char *filename;
-		TCHAR *wfilename;
+	if (PathCombine(finddir, dirname, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
+		panic("error producing version of \"%S\" for FindFirstFile()", dirname);
+	dir = FindFirstFile(finddir, &entry);
+	if (dir == INVALID_HANDLE_VALUE) {
+		DWORD e;
 
-		errno = 0;
-		entry = readdir(dir);
-		if (entry == NULL) {
-			if (errno != 0)
-				panic("error reading \"%s\": %s", dirname, strerror(errno));
-			break;		// otherwise, we're done
+		e = GetLastError();
+		if (e == ERROR_FILE_NOT_FOUND) {
+			// TODO report to user
+			printf("no files\n");
+			exit(0);
 		}
+		SetLastError(e);		// for panic()
+		panic("error opening \"%S\"", dirname);
+	}
+	for (;;) {
+		TCHAR filename[MAX_PATH + 1];
 
-		if (asprintf(&filename, "%s\\%s", dirname, entry->d_name) == -1)
-			panic("error allocating combined filename %s\\%s: %s",
-				dirname, entry->d_name, strerror(errno));
-		wfilename = toWideString(filename);
-		free(filename);
+		if (PathCombine(filename, dirname, entry.cFileName) == NULL)
+			panic("error allocating combined filename \"%S\\%S\"",
+				dirname, entry.cFileName);
 
 		UINT i, nIcons;
 
-		addGroup(listview, entry->d_name, groupid);
+		addGroup(listview, entry.cFileName, groupid);
 
-		nIcons = (UINT) ExtractIcon(hInstance, wfilename, -1);
+		nIcons = (UINT) ExtractIcon(hInstance, filename, -1);
 		// no need to check for no icons; nothing will happen
 		for (i = 0; i < nIcons; i++) {
 			HICON icon;
 			int index;
 
-			icon = ExtractIcon(hInstance, wfilename, i);
+			icon = ExtractIcon(hInstance, filename, i);
 			if (icon == NULL || icon == (HICON) 1)		// NULL if no icons; 1 if cannot hold icons
 				break;
 			index = ImageList_AddIcon(icons, icon);
 			if (index == -1)
-				panic("error adding icon %u from %s to image list", i, entry->d_name);
+				panic("error adding icon %u from %S to image list", i, entry.cFileName);
 
 			LVITEM item;
 
@@ -272,12 +271,22 @@ void buildUI(HWND mainwin)
 			item.iItem = itemid++;
 			if (SendMessage(listview, LVM_INSERTITEM,
 				(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
-				panic("error adding icon %u from %s to list view", i, entry->d_name);
+				panic("error adding icon %u from %S to list view", i, entry.cFileName);
 		}
-		free(wfilename);
 		groupid++;
+
+		if (FindNextFile(dir, &entry) == 0) {
+			DWORD e;
+
+			e = GetLastError();
+			if (e == ERROR_NO_MORE_FILES)		// we're done
+				break;
+			SetLastError(e);		// for panic()
+			panic("error getting next filename in \"%S\"", dirname);
+		}
 	}
-	closedir(dir);
+	if (FindClose(dir) == 0)
+		panic("error closing \"%S\"", dirname);
 
 	// and we're done with the dummy item
 	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)

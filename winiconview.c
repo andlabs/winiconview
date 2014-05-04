@@ -187,7 +187,7 @@ void addGroup(HWND listview, TCHAR *name, int id)
 	n = SendMessage(listview, LVM_INSERTGROUP,
 		(WPARAM) -1, (LPARAM) &g);
 	if (n == (LRESULT) -1)
-		panic("error adding list view group \"%s\"", name);
+		panic("error adding list view group \"%S\"", name);
 	// save the name so we can sort
 	if (ngroupnames < id + 1)
 		ngroupnames = id + 1;
@@ -195,6 +195,8 @@ void addGroup(HWND listview, TCHAR *name, int id)
 	if (groupnames == NULL)
 		panic("error expanding groupnames list to fit new group name \"%s\"", name);
 	groupnames[id] = _wcsdup(name);
+	if (groupnames[id] == NULL)
+		panic("error making copy of filename %S for sorting", name);
 }
 
 // MSDN is bugged; http://msdn.microsoft.com/en-us/library/windows/desktop/bb775142%28v=vs.85%29.aspx is missing the CALLBACK, which led to mysterious crashes in wine

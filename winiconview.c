@@ -229,15 +229,19 @@ void buildUI(HWND mainwin)
 		panic("error adding dummy item to list view");
 	// the dummy item has index 0
 
-	HIMAGELIST largeicons;
+	HIMAGELIST largeicons, smallicons;
 
 	largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
 		ILC_COLOR32, 100, 100);
 	if (largeicons == NULL)
-		panic("error creating icon list for list view");
+		panic("error creating large icon list for list view");
+	smallicons = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
+		ILC_COLOR32, 100, 100);
+	if (smallicons == NULL)
+		panic("error creating small icon list for list view");
 	if (SendMessage(listview, LVM_SETIMAGELIST,
 		LVSIL_NORMAL, (LPARAM) largeicons) == (LRESULT) NULL)
-;//		panic("error giving icon list to list view");
+;//		panic("error giving large icon list to list view");
 
 	if (SendMessage(listview, LVM_ENABLEGROUPVIEW,
 		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)
@@ -285,15 +289,26 @@ void buildUI(HWND mainwin)
 			large = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (large == NULL)
 				panic("error allocating array of large icon handles for \"%S\"", filename);
+			small = (HICON *) malloc(nIcons * sizeof (HICON));
+			if (small == NULL)
+				panic("error allocating array of small icon handles for \"%S\"", filename);
 			if (ExtractIconEx(filename, 0, large, NULL, nIcons) != nIcons)
 				panic("error extracting large icons from \"%S\"", filename);
+			if (ExtractIconEx(filename, 0, NULL, small, nIcons) != nIcons)
+				panic("error extracting small icons from \"%S\"", filename);
 			for (i = 0; i < nIcons; i++) {
-				int index;
+				int index, i2;
 				LVITEM item;
 
 				index = ImageList_AddIcon(largeicons, large[i]);
 				if (index == -1)
 					panic("error adding icon %u from \"%S\" to large icon list", i, filename);
+				i2 = ImageList_AddIcon(smallicons, small[i]);
+				if (i2 == -1)
+					panic("error adding icon %u from \"%S\" to small icon list", i, filename);
+				if (index != i2)
+					panic("internal inconsistency: indices of icon %u from \"%S\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
+
 				ZeroMemory(&item, sizeof (LVITEM));
 				item.mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
 				item.iImage = index;
@@ -308,6 +323,7 @@ void buildUI(HWND mainwin)
 					panic("error adding icon %u from %S to list view", i, entry.cFileName);
 			}
 			free(large);
+			free(small);
 
 			groupid++;
 		}

@@ -259,10 +259,9 @@ void buildUI(HWND mainwin)
 
 			large = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (large == NULL)
-				panic("error allocating array of large icons for \"%S\"", filename);
+				panic("error allocating array of large icons for \"%S\"", filename)
 			if (ExtractIconEx(filename, 0, large, NULL, nIcons) != nIcons)
 				panic("error extracting large icons from \"%S\"", filename);
-
 			for (i = 0; i < nIcons; i++) {
 				int index;
 				LVITEM item;
@@ -283,7 +282,6 @@ void buildUI(HWND mainwin)
 					(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
 					panic("error adding icon %u from %S to list view", i, entry.cFileName);
 			}
-
 			free(large);
 
 			groupid++;

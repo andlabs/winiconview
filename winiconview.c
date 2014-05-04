@@ -218,6 +218,7 @@ void ourWow64DisableWow64FsRedirection(PVOID *);
 void ourWow64RevertWow64FsRedirection(PVOID);
 
 void addIcons(UINT, HICON *, HICON *, int, int *, TCHAR *);
+void addInvalidIcon(int, int *, TCHAR *);
 
 void buildUI(HWND mainwin)
 {
@@ -299,6 +300,8 @@ void buildUI(HWND mainwin)
 		nIcons = (UINT) ExtractIcon(hInstance, filename, -1);
 		if (nIcons != 0) {
 			HICON *large, *small;
+			UINT nlarge, nsmall;
+			UINT nStart = 0;
 
 			addGroup(listview, entry.cFileName, groupid);
 
@@ -308,11 +311,22 @@ void buildUI(HWND mainwin)
 			small = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (small == NULL)
 				panic("error allocating array of small icon handles for \"%S\"", filename);
-			if (ExtractIconEx(filename, 0, large, NULL, nIcons) != nIcons)
-				panic("error extracting large icons from \"%S\"", filename);
-			if (ExtractIconEx(filename, 0, NULL, small, nIcons) != nIcons)
-				panic("error extracting small icons from \"%S\"", filename);
-			addIcons(nIcons, large, small, groupid, &itemid, filename);
+
+			while (nStart < nIcons) {
+				nlarge = ExtractIconEx(filename, nStart, large, NULL, nIcons);
+				nsmall = ExtractIconEx(filename, nStart, NULL, small, nIcons);
+				// don't check returns from ExtractIconEx() here; a 0 return indicates an invalid icon
+				if (nlarge != nsmall)
+					panic("internal inconsisitency reading icons from \"%S\": differing number of large and small icons read (large: %u, small: %u)", filename, nlarge, nsmall);
+				if (nlarge == 0)	{		// no icon; mark this as invalid
+					addInvalidIcon(groupid, &itemid, filename);
+					nStart++;
+				} else {				// we have icons!
+					addIcons(nlarge, large, small, groupid, &itemid, filename);
+					nStart += nlarge;
+				}
+			}
+
 			free(large);
 			free(small);
 
@@ -363,9 +377,11 @@ void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid,
 		index = ImageList_AddIcon(largeicons, large[i]);
 		if (index == -1)
 			panic("error adding icon %u from \"%S\" to large icon list", i, filename);
+		DestroyIcon(large[i]);		// the image list seems to keep a copy of the icon; destroy the original to avoid running up against memory limits
 		i2 = ImageList_AddIcon(smallicons, small[i]);
 		if (i2 == -1)
-			panic("error adding icon %u from \"%S\" to small icon list", i, filename);
+			panic("error adding icon %u from \"%S\" to small icon list (%p)", i, filename, small[i]);
+		DestroyIcon(small[i]);
 		if (index != i2)
 			panic("internal inconsistency: indices of icon %u from \"%S\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
 
@@ -381,7 +397,26 @@ void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid,
 		if (SendMessage(listview, LVM_INSERTITEM,
 			(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
 			panic("error adding icon %u from \"%S\" to list view", i, filename);
+		// TODO above errors (note plural) needs to be changed to represent the correct icon count
 	}
+}
+
+void addInvalidIcon(int groupid, int *itemid, TCHAR *filename)
+{
+	LVITEM item;
+
+	// TODO prevent an icon from being shown for these?
+	ZeroMemory(&item, sizeof (LVITEM));
+	item.mask = LVIF_GROUPID | LVIF_TEXT;
+	item.iGroupId = groupid;
+	char *q;
+	asprintf(&q, "%d (invalid)", *itemid);
+	item.pszText = toWideString(q);
+	free(q);
+	item.iItem = (*itemid)++;
+	if (SendMessage(listview, LVM_INSERTITEM,
+		(WPARAM) -1, (LPARAM) &item) == (LRESULT) -1)
+		panic("error adding invalid icon from \"%S\" to list view", filename);
 }
 
 void firstShowWindow(HWND hwnd);

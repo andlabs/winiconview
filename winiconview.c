@@ -217,7 +217,7 @@ void buildUI(HWND mainwin)
 
 	HANDLE dir;
 	WIN32_FIND_DATA entry;
-	PVOID ;
+	PVOID wow64token;
 	TCHAR finddir[MAX_PATH + 1];
 	int groupid = 0;
 

@@ -11,24 +11,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <getopt.h>
 #include <windows.h>
 #include <commctrl.h>		// needed for InitCommonControlsEx() (thanks Xeek in irc.freenode.net/#winapi for confirming)
 #include <shlobj.h>
 #include <shlwapi.h>
 
 #ifdef  _MSC_VER
-#error sorry! the scratch windows program relies on mingw-only functionality! (specifically: asprintf(), getopt_long_only())
+#error sorry! the scratch windows program relies on mingw-only functionality! (specifically: asprintf())
 #endif
-
-// cheating: we store the help string in the flag argument, collect them, then overwrite them with NULL in init() so getopt_long_only() will return val and not overwrite a string (apparently I'm not the first to think of this: GerbilSoft says GNU tools do this too)
-#define flagBool(name, help, short) { name, no_argument, (int *) help, short }
-#define flagString(name, help, short) { name, required_argument, (int *) help, short }
-static struct option flags[] = {
-	// place other options here
-	flagBool("help", "show help and quit", 'h'),
-	{ 0, 0, 0, 0 },
-};
 
 HMODULE hInstance;
 HICON hDefaultIcon;
@@ -38,19 +28,22 @@ HFONT controlfont;
 void panic(char *fmt, ...);
 TCHAR *toWideString(char *what);
 
-void init(int argc, char *argv[]);
-
 TCHAR *dirname = NULL;
 
-char *args = "dir";		// other command-line arguments here, if any
-
-BOOL parseArgs(int argc, char *argv[])
+void init(int argc, char *argv[])
 {
-//	if (optind != argc - 1)		// equivalent to argc != 2
-//		return FALSE;
+	int usageret = EXIT_FAILURE;
+
+	if (argc > 2)
+		goto usage;
+	if (argc == 2) {
+		if (strcmp(argv[1], "--help") == 0) {
+			usageret = 0;
+			goto usage;
+		}
 //	dirname = toWideString(argv[optind]);
 dirname = L"C:\\Windows\\System32";
-	if (optind != argc) {
+	} else {
 		HRESULT res;
 		BROWSEINFO bi;
 		PIDLIST_ABSOLUTE pidl;
@@ -77,7 +70,12 @@ dirname = L"C:\\Windows\\System32";
 		CoUninitialize();
 		exit(0);
 	}
-	return TRUE;
+	return;
+
+usage:
+	fprintf(stderr,  "usage: %s\n\t%s pathname\n\t%s --help\n",
+		argv[0], argv[0], argv[0]);
+	exit(usageret);
 }
 
 HWND listview = NULL;
@@ -315,6 +313,7 @@ void buildUI(HWND mainwin)
 }
 
 void firstShowWindow(HWND hwnd);
+void initwin(void);
 
 int main(int argc, char *argv[])
 {
@@ -322,6 +321,7 @@ int main(int argc, char *argv[])
 	MSG msg;
 
 	init(argc, argv);
+	initwin();
 
 	mainwin = makeMainWindow();
 	buildUI(mainwin);
@@ -386,55 +386,6 @@ void initwin(void)
 	controlfont = CreateFontIndirect(&ncm.lfMessageFont);
 	if (controlfont == NULL)
 		panic("error getting control font");
-}
-
-void init(int argc, char *argv[])
-{
-	int usageExit = 1;
-	char *opthelp[512];		// more than enough
-	int i;
-
-	for (i = 0; flags[i].name != 0; i++) {
-		opthelp[i] = (char *) flags[i].flag;
-		flags[i].flag = NULL;
-	}
-
-	for (;;) {
-		int c;
-
-		c = getopt_long_only(argc, argv, "", flags, NULL);
-		if (c == -1)
-			break;
-		switch (c) {
-		case 'h':		// -help
-			usageExit = 0;
-			goto usage;
-		case '?':
-			// getopt_long_only() should have printed something since we did not set opterr to 0
-			goto usage;
-		default:
-			fprintf(stderr, "internal error: getopt_long_only() returned %d\n", c);
-			exit(1);
-		}
-	}
-
-	if (parseArgs(argc, argv) != TRUE)
-		goto usage;
-
-	initwin();
-	return;
-
-usage:
-	fprintf(stderr, "usage: %s [options]", argv[0]);
-	if (args != NULL && *args != '\0')
-		fprintf(stderr, " %s", args);
-	fprintf(stderr, "\n");
-	for (i = 0; flags[i].name != 0; i++)
-		fprintf(stderr, "\t-%s%s - %s\n",
-			flags[i].name,
-			(flags[i].has_arg == required_argument) ? " string" : "",
-			opthelp[i]);
-	exit(usageExit);
 }
 
 void panic(char *fmt, ...)

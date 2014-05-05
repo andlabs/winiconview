@@ -9,8 +9,6 @@
 #endif
 
 HMODULE hInstance;
-HICON hDefaultIcon;
-HCURSOR hDefaultCursor;
 HFONT controlfont;
 
 TCHAR *dirname = NULL;
@@ -70,129 +68,20 @@ usage:
 	exit(usageret);
 }
 
-HWND mainwin;
-
-#define ID_LISTVIEW 100
-
-struct mainwinData {
-	HCURSOR currentCursor;
-	HWND label;
-	HWND progressbar;
-	HWND listview;
-};
-
-LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
-{
-	struct mainwinData *data;
-	NMHDR *nmhdr;
-
-	// we can assume the GetWindowLongPtr()/SetWindowLongPtr() calls will work; see comments of http://blogs.msdn.com/b/oldnewthing/archive/2014/02/03/10496248.aspx
-	data = (struct mainwinData *) GetWindowLongPtr(hwnd, GWL_USERDATA);
-	if (data == NULL) {
-		data = (struct mainwinData *) malloc(sizeof (struct mainwinData));
-		if (data == NULL)
-			panic("error allocating main window data structure");
-		ZeroMemory(data, sizeof (struct mainwinData));
-		data->currentCursor = hDefaultCursor;
-		SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR) data);
-	}
-
-	switch (msg) {
-	case msgBegin:
-		data->currentCursor = LoadCursor(NULL, IDC_WAIT);
-		if (data->currentCursor == NULL)
-			panic("error loading busy cursor");
-		data->label = CreateWindowEx(0,
-			L"STATIC", L"Gathering icons. Please wait.",
-			SS_NOPREFIX | SS_LEFTNOWORDWRAP | WS_CHILD | WS_VISIBLE,
-			20, 20, 200, 20,
-			mainwin, NULL, hInstance, NULL);
-		if (data->label == NULL)
-			panic("error making \"please wait\" label");
-		data->progressbar = CreateWindowEx(0,
-			PROGRESS_CLASS, L"",
-			PBS_SMOOTH | WS_CHILD | WS_VISIBLE,
-			20, 45, 200, 40,
-			mainwin, NULL, hInstance, NULL);
-		if (data->progressbar == NULL)
-			panic("error making progressbar");
-		SendMessage(data->progressbar, PBM_SETRANGE32,
-			0, lparam);
-		SendMessage(data->progressbar, PBM_SETSTEP, 1, 0);
-		return 0;
-	case msgStep:
-		SendMessage(data->progressbar, PBM_STEPIT, 0, 0);
-		return 0;
-	case msgEnd:
-		// kill redraw because this is a heavy operation
-		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) FALSE, 0);
-		if (DestroyWindow(data->label) == 0)
-			panic("error removing \"please wait\" label");
-		if (DestroyWindow(data->progressbar) == 0)
-			panic("error removing progressbar");
-		makeListView(mainwin, (HMENU) ID_LISTVIEW);
-		data->currentCursor = hDefaultCursor;		// TODO move to end and make atomic
-		resizeListView(mainwin);
-		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) TRUE, 0);
-		RedrawWindow(mainwin, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
-		// TODO set focus on the listview so I can use the scroll wheel
-		// while I'm here, TODO figure out why the icons now have a black border around them
-		return 0;
-	case WM_SETCURSOR:
-		SetCursor(data->currentCursor);
-		return TRUE;
-	case WM_NOTIFY:
-		nmhdr = (NMHDR *) lparam;
-		if (nmhdr->idFrom == ID_LISTVIEW)
-			return handleListViewRightClick(nmhdr);
-		return 0;
-	case WM_CLOSE:
-		PostQuitMessage(0);
-		return 0;
-	case WM_SIZE:
-		resizeListView(mainwin);
-		return 0;
-	default:
-		return DefWindowProc(hwnd, msg, wparam, lparam);
-	}
-	panic("oops: message %ud does not return anything; bug in wndproc()", msg);
-}
-
-void makeMainWindow(void)
-{
-	WNDCLASS cls;
-
-	ZeroMemory(&cls, sizeof (WNDCLASS));
-	cls.lpszClassName = L"mainwin";
-	cls.lpfnWndProc = wndproc;
-	cls.hInstance = hInstance;
-	cls.hIcon = hDefaultIcon;
-	cls.hCursor = hDefaultCursor;
-	cls.hbrBackground = (HBRUSH) (COLOR_BTNFACE + 1);
-	if (RegisterClass(&cls) == 0)
-		panic("error registering window class");
-	mainwin = CreateWindowEx(0,
-		L"mainwin", L"Main Window",
-		WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT,
-		CW_USEDEFAULT, CW_USEDEFAULT,
-		NULL, NULL, hInstance, NULL);
-	if (mainwin == NULL)
-		panic("opening main window failed");
-}
-
 void initwin(void);
 
 int CALLBACK WinMain(HINSTANCE _hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
+	HWND mainwin;
 	MSG msg;
 	struct giThreadData data;
 
 	init();
 	hInstance = _hInstance;
 	initwin();
+	registerMainWindowClass();
 
-	makeMainWindow();
+	mainwin = makeMainWindow();
 	data.mainwin = mainwin;
 	data.dirname = dirname;
 	if (CreateThread(NULL, 0, getIcons, &data, 0, NULL) == NULL)
@@ -240,12 +129,6 @@ void initwin(void)
 	INITCOMMONCONTROLSEX icc;
 	NONCLIENTMETRICS ncm;
 
-	hDefaultIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_APPLICATION));
-	if (hDefaultIcon == NULL)
-		panic("error getting default window class icon");
-	hDefaultCursor = LoadCursor(NULL, IDC_ARROW);
-	if (hDefaultCursor == NULL)
-		panic("error getting default window cursor");
 	icc.dwSize = sizeof (INITCOMMONCONTROLSEX);
 	icc.dwICC = iccFlags;
 	if (InitCommonControlsEx(&icc) == FALSE)

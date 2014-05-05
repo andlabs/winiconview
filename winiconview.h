@@ -16,10 +16,14 @@
 // winiconview.c
 extern HINSTANCE hInstance;
 
+// mainwin.c
+void registerMainWindowClass(void);
+HWND makeMainWindow(void);
+
 // listview.c
-extern void makeListView(HWND, HMENU);
-extern void resizeListView(HWND);
-extern LRESULT handleListViewRightClick(NMHDR *);
+void makeListView(HWND, HMENU);
+void resizeListView(HWND);
+LRESULT handleListViewRightClick(NMHDR *);
 
 // util.c
 void panic(char *fmt, ...);

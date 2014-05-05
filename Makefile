@@ -3,7 +3,7 @@ ifeq ($(MAKECMDGOALS),64)
 else
 	CC = i686-w64-mingw32-gcc
 endif
-CFILES = winiconview.c geticons.c listview.c util.c
+CFILES = winiconview.c mainwin.c geticons.c listview.c util.c
 
 all:
 	$(CC) -g -o winiconview.exe $(CFILES) $(CFLAGS) $(LDFLAGS) $(neededFLAGS)

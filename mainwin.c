@@ -38,26 +38,31 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 	baseX = (extents.cx / 26 + 1) / 2;
 	// don't close the DC yet; we still need it
 
-	int startx = 20;
-	int starty = 20;
-	int endx = startx;
-	int endy = starty;
-	int width = 0;
-	int cx = startx, cy = starty;
-	int cwid, cht;
-
 	// via http://msdn.microsoft.com/en-us/library/windows/desktop/aa511279.aspx
 	// TODO follow spacing rules here too
 	enum {
 		labelHeight = 8,
 		pbarWidth = 237,
 		pbarHeight = 8,
+		windowMargin = 7,
+		labelpbarSeparation = 3,		// "Between text labels and associated controls"
 	};
 
 	// from http://msdn.microsoft.com/en-us/library/windows/desktop/ms645502%28v=vs.85%29.aspx
 	// we shouldn't need to worry about overflow...
 #define FROMDLGUNITSX(x) MulDiv((x), baseX, 4)
 #define FROMDLGUNITSY(y) MulDiv((y), baseY, 8)
+
+	// window width
+	int width = 0;
+
+	// current control position
+	// cy will double as the window height at the end
+	int cx = FROMDLGUNITSX(windowMargin);
+	int cy = FROMDLGUNITSY(windowMargin);
+
+	// individual control size
+	int cwid, cht;
 
 	// first, the "please wait" label
 	if (GetTextExtentPoint32(dc, data->labelText, wcslen(data->labelText), &extents) == 0)
@@ -68,10 +73,8 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 		panic("error laying out \"please wait\" label for laying out progress controls");
 	cy += cht;
 
-	if (width < (cx + cwid))		// window width
-		width = (cx + cwid);
-
-	cy += 10;
+	width = (cx + cwid);		// initial window width
+	cy += FROMDLGUNITSY(labelpbarSeparation);
 
 	// now the progressbar
 	cwid = FROMDLGUNITSX(pbarWidth);
@@ -80,14 +83,14 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 		panic("error laying out progressbar for laying out progress controls");
 	cy += cht;
 
-	if (width < (cx + cwid))		// window width
+	if (width < (cx + cwid))						// if the progress bar is longer, overrule the above
 		width = (cx + cwid);
-	width += 20;	// end of width
+	width += FROMDLGUNITSX(windowMargin);		// end of width
 
 	// and now for the window
 	// we use the same x and y position
 	// the client width is width; the client height is cy + final padding
-	cy += 20;		// final padding
+	cy += FROMDLGUNITSY(windowMargin);		// final padding
 
 	RECT client;
 
@@ -175,7 +178,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	case msgStep:
 		SendMessage(data->progressbar, PBM_STEPIT, 0, 0);
 		return 0;
-	case msgEnd: for(;;);
+	case msgEnd:
 		// kill redraw because this is a heavy operation
 		SendMessage(hwnd, WM_SETREDRAW, (WPARAM) FALSE, 0);
 		if (DestroyWindow(data->label) == 0)

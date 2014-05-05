@@ -3,7 +3,7 @@
 
 static HIMAGELIST iconlists[2];
 
-HWND makeListView(HWND parent, HMENU controlID)
+HWND makeListView(HWND parent, HMENU controlID, struct giThreadOutput *o)
 {
 	HWND listview;
 
@@ -16,10 +16,10 @@ HWND makeListView(HWND parent, HMENU controlID)
 		panic("error creating list view");
 
 	if (SendMessage(listview, LVM_SETIMAGELIST,
-		LVSIL_NORMAL, (LPARAM) largeicons) == (LRESULT) NULL)
+		LVSIL_NORMAL, (LPARAM) o->largeicons) == (LRESULT) NULL)
 ;//		panic("error giving large icon list to list view");
-	iconlists[0] = largeicons;
-	iconlists[1] = smallicons;
+	iconlists[0] = o->largeicons;
+	iconlists[1] = o->smallicons;
 
 	// we need to have an item to be able to add a group
 	LVITEM dummy;
@@ -39,14 +39,14 @@ HWND makeListView(HWND parent, HMENU controlID)
 
 	size_t i;
 
-	for (i = 0; i < nGroups; i++)
+	for (i = 0; i < o->nGroups; i++)
 		if (SendMessage(listview, LVM_INSERTGROUP,
-			(WPARAM) -1, (LPARAM) &groups[i]) == (LRESULT) -1)
-			panic("error adding group \"%S\" to list view", groups[i].pszHeader);
-	for (i = 0; i < nItems; i++)
+			(WPARAM) -1, (LPARAM) &o->groups[i]) == (LRESULT) -1)
+			panic("error adding group \"%S\" to list view", o->groups[i].pszHeader);
+	for (i = 0; i < o->nItems; i++)
 		if (SendMessage(listview, LVM_INSERTITEM,
-			(WPARAM) 0, (LPARAM) &items[i]) == (LRESULT) -1)
-			panic("error adding item \"%S\" to list view", items[i].pszText);
+			(WPARAM) 0, (LPARAM) &o->items[i]) == (LRESULT) -1)
+			panic("error adding item \"%S\" to list view", o->items[i].pszText);
 
 	// and we're done with the dummy item
 	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)
@@ -54,7 +54,7 @@ HWND makeListView(HWND parent, HMENU controlID)
 
 	// now sort the groups in alphabetical order
 	if (SendMessage(listview, LVM_SORTGROUPS,
-		(WPARAM) groupLess, (LPARAM) NULL) == 0)
+		(WPARAM) groupLess, (LPARAM) o) == 0)
 		panic("error sorting icon groups by filename");
 
 	// and now some extended styles

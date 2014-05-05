@@ -26,11 +26,6 @@ HFONT selectControlFont(HDC);
 void registerMainWindowClass(void);
 HWND makeMainWindow(TCHAR *);
 
-// listview.c
-HWND makeListView(HWND, HMENU);
-void resizeListView(HWND, HWND);
-LRESULT handleListViewRightClick(HWND, NMHDR *);
-
 // util.c
 void panic(char *fmt, ...);
 TCHAR *toWideString(char *what);
@@ -44,15 +39,26 @@ enum {
 	msgEnd,
 };
 
-struct giThreadData {
+struct giThreadInput {
 	HWND mainwin;
 	TCHAR *dirname;
 };
 
-extern HIMAGELIST largeicons, smallicons;
-extern LVGROUP *groups;
-extern LVITEM *items;
-extern size_t nGroups, nItems;
+struct giThreadOutput {
+	HIMAGELIST largeicons;
+	HIMAGELIST smallicons;
+	LVGROUP *groups;
+	size_t nGroups;
+	LVITEM *items;
+	size_t nItems;
+	TCHAR **groupnames;		// to store group names for sorting
+	int ngroupnames;
+};
 
 DWORD WINAPI getIcons(LPVOID);
 INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data);
+
+// listview.c
+HWND makeListView(HWND, HMENU, struct giThreadOutput *);
+void resizeListView(HWND, HWND);
+LRESULT handleListViewRightClick(HWND, NMHDR *);

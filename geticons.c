@@ -1,30 +1,25 @@
 // 4 may 2014
 #include "winiconview.h"
 
-HIMAGELIST largeicons, smallicons;
-LVGROUP *groups = NULL;
-size_t nGroups = 0;
-LVITEM *items = NULL;
-size_t nItems = 0;
+struct giThreadData {
+	struct giThreadOutput *o;			// pointer so it can be allocated on the process heap
+	size_t nGroupsAlloc;
+	size_t nItemsAlloc;
+};
 
-static size_t nGroupsAlloc = 0, nItemsAlloc = 0;
-
-static TCHAR **groupnames = NULL;		// to store group names for sorting
-static int ngroupnames = 0;
-
-static void addGroup(TCHAR *name, int id)
+static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 {
 	LVGROUP *g;
 	LRESULT n;
 	TCHAR *wname;
 
-	if (nGroups >= nGroupsAlloc) {		// need more memory
-		nGroupsAlloc += 200;		// will handle first run too
-		groups = (LVGROUP *) realloc(groups, nGroupsAlloc * sizeof(LVGROUP));
-		if (groups == NULL)
+	if (d->o->nGroups >= d->nGroupsAlloc) {		// need more memory
+		d->nGroupsAlloc += 200;		// will handle first run too
+		d->o->groups = (LVGROUP *) realloc(d->o->groups, d->nGroupsAlloc * sizeof (LVGROUP));
+		if (d->o->groups == NULL)
 			panic("error allocating room for list view groups");
 	}
-	g = &groups[nGroups++];
+	g = &d->o->groups[d->o->nGroups++];
 	ZeroMemory(g, sizeof (LVGROUP));
 	g->cbSize = sizeof (LVGROUP);
 	g->mask = LVGF_HEADER | LVGF_GROUPID;
@@ -36,12 +31,12 @@ static void addGroup(TCHAR *name, int id)
 	g->iGroupId = id;
 
 	// save the name so we can sort
-	if (ngroupnames < id + 1)
-		ngroupnames = id + 1;
-	groupnames = (TCHAR **) realloc(groupnames, ngroupnames * sizeof (TCHAR *));
-	if (groupnames == NULL)
+	if (d->o->ngroupnames < id + 1)
+		d->o->ngroupnames = id + 1;
+	d->o->groupnames = (TCHAR **) realloc(d->o->groupnames, d->o->ngroupnames * sizeof (TCHAR *));
+	if (d->o->groupnames == NULL)
 		panic("error expanding groupnames list to fit new group name \"%s\"", name);
-	groupnames[id] = g->pszHeader;
+	d->o->groupnames[id] = g->pszHeader;
 }
 
 // MSDN is bugged; http://msdn.microsoft.com/en-us/library/windows/desktop/bb775142%28v=vs.85%29.aspx is missing the CALLBACK, which led to mysterious crashes in wine
@@ -49,25 +44,35 @@ static void addGroup(TCHAR *name, int id)
 // the headers also say int/void instead of INT/VOID but eh
 INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 {
-	if (gn1 < 0 || gn1 >= ngroupnames)
-		panic("group ID %d out of range in compare (max %d)", gn1, ngroupnames - 1);
-	if (gn2 < 0 || gn2 >= ngroupnames)
-		panic("group ID %d out of range in compare (max %d)", gn2, ngroupnames - 1);
+	struct giThreadOutput *o = (struct giThreadOutput *) data;
+
+	if (gn1 < 0 || gn1 >= o->ngroupnames)
+		panic("group ID %d out of range in compare (max %d)", gn1, o->ngroupnames - 1);
+	if (gn2 < 0 || gn2 >= o->ngroupnames)
+		panic("group ID %d out of range in compare (max %d)", gn2, o->ngroupnames - 1);
 	// ignore case; these are filenames
 	// Microsoft says to use the _-prefixed functions (http://msdn.microsoft.com/en-us/library/ms235365.aspx); I wonder why these would be in the C++ standard... (TODO)
-	return _wcsicmp(groupnames[gn1], groupnames[gn2]);
+	return _wcsicmp(o->groupnames[gn1], o->groupnames[gn2]);
 	// why not just get the group info each time? because we can't get the header length later, at least not as far as I know
 }
 
 static LPARAM filecount(TCHAR *, TCHAR *);
-static void addIcons(UINT, HICON *, HICON *, int, int *, TCHAR *);
-static void addInvalidIcon(int, int *, TCHAR *);
+static void addIcons(struct giThreadData *, UINT, HICON *, HICON *, int, int *, TCHAR *);
+static void addInvalidIcon(struct giThreadData *, int, int *, TCHAR *);
 
-DWORD WINAPI getIcons(LPVOID data)
+DWORD WINAPI getIcons(LPVOID vinput)
 {
-	struct giThreadData *threadData = (struct giThreadData *) data;
-	HWND mainwin = threadData->mainwin;
-	TCHAR *dirname = threadData->dirname;
+	struct giThreadInput *input = (struct giThreadInput *) vinput;
+	HWND mainwin = input->mainwin;
+	TCHAR *dirname = input->dirname;
+
+	struct giThreadData d;
+
+	ZeroMemory(&d, sizeof (struct giThreadData));
+	d.o = (struct giThreadOutput *) malloc(sizeof (struct giThreadOutput));
+	if (d.o == NULL)
+		panic("error allocating getIcons() thread output area");
+	ZeroMemory(d.o, sizeof (struct giThreadOutput));
 
 	PVOID wow64token;
 
@@ -84,13 +89,13 @@ DWORD WINAPI getIcons(LPVOID data)
 	int itemid = 1;		// 0 is the dummy item
 
 	// ILC_MASK for icons that use a transparency mask; ILC_COLOR32 for those that don't so we can support newer icons
-	largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
+	d.o->largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
 		ILC_COLOR32 | ILC_MASK, 100, 100);
-	if (largeicons == NULL)
+	if (d.o->largeicons == NULL)
 		panic("error creating large icon list for list view");
-	smallicons = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
+	d.o->smallicons = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
 		ILC_COLOR32 | ILC_MASK, 100, 100);
-	if (smallicons == NULL)
+	if (d.o->smallicons == NULL)
 		panic("error creating small icon list for list view");
 
 	HANDLE dir;
@@ -103,8 +108,9 @@ DWORD WINAPI getIcons(LPVOID data)
 
 		e = GetLastError();
 		if (e == ERROR_FILE_NOT_FOUND) {
-			// TODO report to user
+			// TODO report to user; do it on the main window instead
 			printf("no files\n");
+			// TODO don't quit
 			exit(0);
 		}
 		SetLastError(e);		// for panic()
@@ -128,7 +134,7 @@ DWORD WINAPI getIcons(LPVOID data)
 			UINT nlarge, nsmall;
 			UINT nStart = 0;
 
-			addGroup(entry.cFileName, groupid);
+			addGroup(&d, entry.cFileName, groupid);
 
 			large = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (large == NULL)
@@ -144,10 +150,10 @@ DWORD WINAPI getIcons(LPVOID data)
 				if (nlarge != nsmall)
 					panic("internal inconsisitency reading icons from \"%S\": differing number of large and small icons read (large: %u, small: %u)", filename, nlarge, nsmall);
 				if (nlarge == 0)	{		// no icon; mark this as invalid
-					addInvalidIcon(groupid, &itemid, filename);
+					addInvalidIcon(&d, groupid, &itemid, filename);
 					nStart++;
 				} else {				// we have icons!
-					addIcons(nlarge, large, small, groupid, &itemid, filename);
+					addIcons(&d, nlarge, large, small, groupid, &itemid, filename);
 					nStart += nlarge;
 				}
 			}
@@ -173,41 +179,41 @@ DWORD WINAPI getIcons(LPVOID data)
 
 	ourWow64RevertWow64FsRedirection(wow64token);
 
-	if (PostMessage(mainwin, msgEnd, 0, 0) == 0)
+	if (PostMessage(mainwin, msgEnd, 0, (LPARAM) d.o) == 0)
 		panic("error notifying main window that processing has ended");
 	return 0;
 }
 
-static LVITEM *addItem(void)
+static LVITEM *addItem(struct giThreadData *d)
 {
-	if (nItems >= nItemsAlloc) {		// need more memory
-		nItemsAlloc += 200;			// will handle first run too
-		items = (LVITEM *) realloc(items, nItemsAlloc * sizeof (LVITEM));
-		if (items == NULL)
+	if (d->o->nItems >= d->nItemsAlloc) {		// need more memory
+		d->nItemsAlloc += 200;			// will handle first run too
+		d->o->items = (LVITEM *) realloc(d->o->items, d->nItemsAlloc * sizeof (LVITEM));
+		if (d->o->items == NULL)
 			panic("error allocating room for list view items");
 	}
-	return &items[nItems++];
+	return &d->o->items[d->o->nItems++];
 }
 
-static void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid, TCHAR *filename)
+static void addIcons(struct giThreadData *d, UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid, TCHAR *filename)
 {
 	UINT i;
 	int index, i2;
 	LVITEM *item;
 
 	for (i = 0; i < nIcons; i++) {
-		index = ImageList_AddIcon(largeicons, large[i]);
+		index = ImageList_AddIcon(d->o->largeicons, large[i]);
 		if (index == -1)
 			panic("error adding icon %u from \"%S\" to large icon list", i, filename);
 		DestroyIcon(large[i]);		// the image list seems to keep a copy of the icon; destroy the original to avoid running up against memory limits (TODO verify against documentation; it confused me at first)
-		i2 = ImageList_AddIcon(smallicons, small[i]);
+		i2 = ImageList_AddIcon(d->o->smallicons, small[i]);
 		if (i2 == -1)
 			panic("error adding icon %u from \"%S\" to small icon list (%p)", i, filename, small[i]);
 		DestroyIcon(small[i]);
 		if (index != i2)
 			panic("internal inconsistency: indices of icon %u from \"%S\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
 
-		item = addItem();
+		item = addItem(d);
 		ZeroMemory(item, sizeof (LVITEM));
 		item->mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
 		item->iImage = index;
@@ -221,12 +227,12 @@ static void addIcons(UINT nIcons, HICON *large, HICON *small, int groupid, int *
 	}
 }
 
-static void addInvalidIcon(int groupid, int *itemid, TCHAR *filename)
+static void addInvalidIcon(struct giThreadData *d, int groupid, int *itemid, TCHAR *filename)
 {
 	LVITEM *item;
 
 	// TODO prevent an icon from being shown for these?
-	item = addItem();
+	item = addItem(d);
 	ZeroMemory(item, sizeof (LVITEM));
 	item->mask = LVIF_GROUPID | LVIF_TEXT;
 	item->iGroupId = groupid;

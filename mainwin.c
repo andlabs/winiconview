@@ -118,7 +118,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	struct mainwinData *data;
 	NMHDR *nmhdr;
 	CREATESTRUCT *cs;
-	struct giThreadData *threadData;
+	struct giThreadInput *threadInput;
 
 	// we can assume the GetWindowLongPtr()/SetWindowLongPtr() calls will work; see comments of http://blogs.msdn.com/b/oldnewthing/archive/2014/02/03/10496248.aspx
 	data = (struct mainwinData *) GetWindowLongPtr(hwnd, GWL_USERDATA);
@@ -135,12 +135,12 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	case WM_NCCREATE:
 		cs = (CREATESTRUCT *) lparam;
 		data->dirname = cs->lpCreateParams;
-		threadData = (struct giThreadData *) malloc(sizeof (struct giThreadData));
-		if (threadData == NULL)
+		threadInput = (struct giThreadInput *) malloc(sizeof (struct giThreadInput));
+		if (threadInput == NULL)
 			panic("error allocating getIcons() thread data structure for \"%S\"", data->dirname);
-		threadData->mainwin = hwnd;
-		threadData->dirname = data->dirname;
-		if (CreateThread(NULL, 0, getIcons, threadData, 0, NULL) == NULL)
+		threadInput->mainwin = hwnd;
+		threadInput->dirname = data->dirname;
+		if (CreateThread(NULL, 0, getIcons, threadInput, 0, NULL) == NULL)
 			panic("error creating worker thread to get icons");
 		// TODO free threadData in the thread
 		// let's defer this to DefWindowProc(); just to be safe, instead of just returning TRUE (TODO)
@@ -185,7 +185,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			panic("error removing \"please wait\" label");
 		if (DestroyWindow(data->progressbar) == 0)
 			panic("error removing progressbar");
-		data->listview = makeListView(hwnd, (HMENU) ID_LISTVIEW);
+		data->listview = makeListView(hwnd, (HMENU) ID_LISTVIEW,
+			(struct giThreadOutput *) lparam);
 		data->currentCursor = arrowCursor;		// TODO move to end and make atomic
 		if (MoveWindow(hwnd, data->defaultWindowRect.left, data->defaultWindowRect.top,
 			data->defaultWindowRect.right - data->defaultWindowRect.left,

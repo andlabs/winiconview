@@ -109,7 +109,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 {
 	HWND mainwin;
 	MSG msg;
-	struct giThreadData data;
 
 	parseArgs();
 	initSharedWindowsStuff(hInstance, nCmdShow);

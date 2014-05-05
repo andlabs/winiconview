@@ -76,7 +76,7 @@ HWND mainwin;
 
 HCURSOR currentCursor;
 
-HWND progressbar;
+HWND label, progressbar;
 
 LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
@@ -87,10 +87,17 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		currentCursor = LoadCursor(NULL, IDC_WAIT);
 		if (currentCursor == NULL)
 			panic("error loading busy cursor");
+		label = CreateWindowEx(0,
+			L"STATIC", L"Gathering icons. Please wait.",
+			SS_NOPREFIX | SS_LEFTNOWORDWRAP | WS_CHILD | WS_VISIBLE,
+			20, 20, 200, 20,
+			mainwin, NULL, hInstance, NULL);
+		if (label == NULL)
+			panic("error making \"please wait\" label");
 		progressbar = CreateWindowEx(0,
 			PROGRESS_CLASS, L"",
 			PBS_SMOOTH | WS_CHILD | WS_VISIBLE,
-			20, 20, 200, 40,
+			20, 45, 200, 40,
 			mainwin, NULL, hInstance, NULL);
 		if (progressbar == NULL)
 			panic("error making progressbar");
@@ -104,10 +111,12 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	case msgEnd:
 		// kill redraw because this is a heavy operation
 		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) FALSE, 0);
+		if (DestroyWindow(label) == 0)
+			panic("error removing \"please wait\" label");
 		if (DestroyWindow(progressbar) == 0)
 			panic("error removing progressbar");
 		makeListView(mainwin, (HMENU) ID_LISTVIEW);
-		currentCursor = hDefaultCursor;
+		currentCursor = hDefaultCursor;		// TODO move to end and make atomic
 		resizeListView(mainwin);
 		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) TRUE, 0);
 		RedrawWindow(mainwin, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to

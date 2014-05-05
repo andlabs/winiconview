@@ -195,7 +195,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		resizeListView(data->listview, hwnd);
 		SendMessage(hwnd, WM_SETREDRAW, (WPARAM) TRUE, 0);
 		RedrawWindow(hwnd, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
-		// TODO set focus on the listview so I can use the scroll wheel
+		if (SetFocus(data->listview) == NULL)
+			panic("error setting focus to the list view");
 		// while I'm here, TODO figure out why the icons now have a black border around them
 		return 0;
 	case WM_SETCURSOR:

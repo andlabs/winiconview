@@ -27,9 +27,9 @@ void registerMainWindowClass(void);
 HWND makeMainWindow(TCHAR *);
 
 // listview.c
-void makeListView(HWND, HMENU);
-void resizeListView(HWND);
-LRESULT handleListViewRightClick(NMHDR *);
+HWND makeListView(HWND, HMENU);
+void resizeListView(HWND, HWND);
+LRESULT handleListViewRightClick(HWND, NMHDR *);
 
 // util.c
 void panic(char *fmt, ...);

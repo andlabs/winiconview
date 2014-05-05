@@ -185,14 +185,14 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			panic("error removing \"please wait\" label");
 		if (DestroyWindow(data->progressbar) == 0)
 			panic("error removing progressbar");
-		makeListView(hwnd, (HMENU) ID_LISTVIEW);
+		data->listview = makeListView(hwnd, (HMENU) ID_LISTVIEW);
 		data->currentCursor = arrowCursor;		// TODO move to end and make atomic
 		if (MoveWindow(hwnd, data->defaultWindowRect.left, data->defaultWindowRect.top,
 			data->defaultWindowRect.right - data->defaultWindowRect.left,
 			data->defaultWindowRect.bottom - data->defaultWindowRect.top,
 			TRUE) == 0)
 			panic("error restoring the original window rect");
-		resizeListView(hwnd);
+		resizeListView(data->listview, hwnd);
 		SendMessage(hwnd, WM_SETREDRAW, (WPARAM) TRUE, 0);
 		RedrawWindow(hwnd, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
 		// TODO set focus on the listview so I can use the scroll wheel
@@ -204,13 +204,13 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	case WM_NOTIFY:
 		nmhdr = (NMHDR *) lparam;
 		if (nmhdr->idFrom == ID_LISTVIEW)
-			return handleListViewRightClick(nmhdr);
+			return handleListViewRightClick(data->listview, nmhdr);
 		return 0;
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		return 0;
 	case WM_SIZE:
-		resizeListView(hwnd);
+		resizeListView(data->listview, hwnd);
 		return 0;
 	default:
 		return DefWindowProc(hwnd, msg, wparam, lparam);

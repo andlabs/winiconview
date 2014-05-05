@@ -1,11 +1,12 @@
 // 5 may 2014
 #include "winiconview.h"
 
-static HWND listview = NULL;
 static HIMAGELIST iconlists[2];
 
-void makeListView(HWND parent, HMENU controlID)
+HWND makeListView(HWND parent, HMENU controlID)
 {
+	HWND listview;
+
 	listview = CreateWindowEx(0,
 		WC_LISTVIEW, L"",
 		LVS_ICON | WS_VSCROLL | WS_CHILD | WS_VISIBLE,
@@ -65,9 +66,11 @@ void makeListView(HWND parent, HMENU controlID)
 	if (xstyle != 0)
 		SendMessage(listview, LVM_SETEXTENDEDLISTVIEWSTYLE,
 			xstyle, xstyle);
+
+	return listview;
 }
 
-void resizeListView(HWND parent)
+void resizeListView(HWND listview, HWND parent)
 {
 	if (listview != NULL) {
 		RECT r;
@@ -79,7 +82,7 @@ void resizeListView(HWND parent)
 	}
 }
 
-LRESULT handleListViewRightClick(NMHDR *nmhdr)
+LRESULT handleListViewRightClick(HWND listview, NMHDR *nmhdr)
 {
 	int times = 1;
 

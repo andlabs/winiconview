@@ -62,8 +62,10 @@ INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 static void addIcons(UINT, HICON *, HICON *, int, int *, TCHAR *);
 static void addInvalidIcon(int, int *, TCHAR *);
 
-void getIcons(TCHAR *dirname)
+DWORD WINAPI getIcons(LPVOID data)
 {
+	TCHAR *dirname = (TCHAR *) data;
+
 	int itemid = 1;		// 0 is the dummy item
 
 	largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
@@ -155,6 +157,7 @@ void getIcons(TCHAR *dirname)
 	if (FindClose(dir) == 0)
 		panic("error closing \"%S\"", dirname);
 	ourWow64RevertWow64FsRedirection(wow64token);
+	return 0;
 }
 
 static LVITEM *addItem(void)

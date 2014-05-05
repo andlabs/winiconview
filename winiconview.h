@@ -29,5 +29,5 @@ extern LVGROUP *groups;
 extern LVITEM *items;
 extern size_t nGroups, nItems;
 
-void getIcons(TCHAR *);
+DWORD WINAPI getIcons(LPVOID);
 INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data);

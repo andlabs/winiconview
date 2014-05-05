@@ -16,6 +16,11 @@
 // winiconview.c
 extern HINSTANCE hInstance;
 
+// listview.c
+extern void makeListView(HWND, HMENU);
+extern void resizeListView(HWND);
+extern LRESULT handleListViewRightClick(NMHDR *);
+
 // util.c
 void panic(char *fmt, ...);
 TCHAR *toWideString(char *what);

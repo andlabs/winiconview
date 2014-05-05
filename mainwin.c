@@ -11,12 +11,15 @@ struct mainwinData {
 	HWND label;
 	HWND progressbar;
 	HWND listview;
+	TCHAR *dirname;
 };
 
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	struct mainwinData *data;
 	NMHDR *nmhdr;
+	CREATESTRUCT *cs;
+	struct giThreadData *threadData;
 
 	// we can assume the GetWindowLongPtr()/SetWindowLongPtr() calls will work; see comments of http://blogs.msdn.com/b/oldnewthing/archive/2014/02/03/10496248.aspx
 	data = (struct mainwinData *) GetWindowLongPtr(hwnd, GWL_USERDATA);
@@ -30,6 +33,20 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	}
 
 	switch (msg) {
+	case WM_NCCREATE:
+		cs = (CREATESTRUCT *) lparam;
+		data->dirname = cs->lpCreateParams;
+		threadData = (struct giThreadData *) malloc(sizeof (struct giThreadData));
+		if (threadData == NULL)
+			panic("error allocating getIcons() thread data structure for \"%S\"", data->dirname);
+		threadData->mainwin = hwnd;
+		threadData->dirname = data->dirname;
+		if (CreateThread(NULL, 0, getIcons, threadData, 0, NULL) == NULL)
+			panic("error creating worker thread to get icons");
+		// TODO free threadData in the thread
+		// let's defer this to DefWindowProc(); just to be safe, instead of just returning TRUE (TODO)
+		// I THINK that's what the oldnewthing link above does anyway
+		return DefWindowProc(hwnd, msg, wparam, lparam);
 	case msgBegin:
 		data->currentCursor = waitCursor;
 		data->label = CreateWindowEx(0,
@@ -50,6 +67,10 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		SendMessage(data->progressbar, PBM_SETRANGE32,
 			0, lparam);
 		SendMessage(data->progressbar, PBM_SETSTEP, 1, 0);
+		// and now that everything's ready we can FINALLY show the main window
+		ShowWindow(hwnd, nCmdShow);
+		if (UpdateWindow(hwnd) == 0)
+			panic("UpdateWindow() failed in first show");
 		return 0;
 	case msgStep:
 		SendMessage(data->progressbar, PBM_STEPIT, 0, 0);
@@ -113,7 +134,7 @@ void registerMainWindowClass(void)
 		panic("error registering window class");
 }
 
-HWND makeMainWindow(void)
+HWND makeMainWindow(TCHAR *dirname)
 {
 	HWND mainwin;
 
@@ -122,7 +143,7 @@ HWND makeMainWindow(void)
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT,
-		NULL, NULL, hInstance, NULL);
+		NULL, NULL, hInstance, dirname);
 	if (mainwin == NULL)
 		panic("opening main window failed");
 	return mainwin;

@@ -9,10 +9,11 @@
 #endif
 
 HMODULE hInstance;
+int nCmdShow;
 
 static HFONT controlfont;
 
-TCHAR *dirname = NULL;
+static TCHAR *dirname = NULL;
 
 static void parseArgs(void)
 {
@@ -69,12 +70,13 @@ usage:
 	exit(usageret);
 }
 
-static void initSharedWindowsStuff(HINSTANCE winmainhInstance)
+static void initSharedWindowsStuff(HINSTANCE winmainhInstance, int winmainnCmdShow)
 {
 	INITCOMMONCONTROLSEX icc;
 	NONCLIENTMETRICS ncm;
 
 	hInstance = winmainhInstance;
+	nCmdShow = winmainnCmdShow;
 	icc.dwSize = sizeof (INITCOMMONCONTROLSEX);
 	icc.dwICC = ICC_LISTVIEW_CLASSES | ICC_PROGRESS_CLASS;
 	if (InitCommonControlsEx(&icc) == FALSE)
@@ -100,17 +102,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 	struct giThreadData data;
 
 	parseArgs();
-	initSharedWindowsStuff(hInstance);
+	initSharedWindowsStuff(hInstance, nCmdShow);
 	registerMainWindowClass();
 
-	mainwin = makeMainWindow();
-	data.mainwin = mainwin;
-	data.dirname = dirname;
-	if (CreateThread(NULL, 0, getIcons, &data, 0, NULL) == NULL)
-		panic("error creating worker thread to get icons");
-	ShowWindow(mainwin, nCmdShow);
-	if (UpdateWindow(mainwin) == 0)
-		panic("UpdateWindow(mainwin) failed in first show");
+	mainwin = makeMainWindow(dirname);
 
 	for (;;) {
 		BOOL gmret;

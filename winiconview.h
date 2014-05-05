@@ -17,12 +17,13 @@
 
 // winiconview.c
 extern HINSTANCE hInstance;
+extern int nCmdShow;
 
 void setControlFont(HWND);
 
 // mainwin.c
 void registerMainWindowClass(void);
-HWND makeMainWindow(void);
+HWND makeMainWindow(TCHAR *);
 
 // listview.c
 void makeListView(HWND, HMENU);

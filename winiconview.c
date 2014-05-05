@@ -101,11 +101,17 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		SendMessage(progressbar, PBM_STEPIT, 0, 0);
 		return 0;
 	case msgEnd:
+		// kill redraw because this is a heavy operation
+		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) FALSE, 0);
 		if (DestroyWindow(progressbar) == 0)
 			panic("error removing progressbar");
 		makeListView(mainwin, (HMENU) ID_LISTVIEW);
 		currentCursor = hDefaultCursor;
 		resizeListView(mainwin);
+		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) TRUE, 0);
+		RedrawWindow(mainwin, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
+		// TODO set focus on the listview so I can use the scroll wheel
+		// while I'm here, TODO figure out why the icons now have a black border around them
 		return 0;
 	case WM_SETCURSOR:
 		SetCursor(currentCursor);

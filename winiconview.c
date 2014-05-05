@@ -37,6 +37,7 @@ void init(void)
 		BROWSEINFO bi;
 		PIDLIST_ABSOLUTE pidl;
 
+		// TODO disable WOW64 redirection here too
 		// the browse for folders dialog uses COM
 		res = CoInitialize(NULL);
 		if (res != S_OK && res != S_FALSE)

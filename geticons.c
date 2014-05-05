@@ -59,6 +59,7 @@ INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 	// why not just get the group info each time? because we can't get the header length later, at least not as far as I know
 }
 
+static LPARAM filecount(TCHAR *, TCHAR *);
 static void addIcons(UINT, HICON *, HICON *, int, int *, TCHAR *);
 static void addInvalidIcon(int, int *, TCHAR *);
 
@@ -68,7 +69,16 @@ DWORD WINAPI getIcons(LPVOID data)
 	HWND mainwin = threadData->mainwin;
 	TCHAR *dirname = threadData->dirname;
 
-	if (PostMessage(mainwin, msgBegin, 0, 0) == 0)
+	PVOID wow64token;
+
+	ourWow64DisableWow64FsRedirection(&wow64token);
+
+	TCHAR finddir[MAX_PATH + 1];
+
+	if (PathCombine(finddir, dirname, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
+		panic("error producing version of \"%S\" for FindFirstFile()", dirname);
+
+	if (PostMessage(mainwin, msgBegin, 0, filecount(dirname, finddir)) == 0)
 		panic("error notifying main window that processing has begun");
 
 	int itemid = 1;		// 0 is the dummy item
@@ -84,13 +94,8 @@ DWORD WINAPI getIcons(LPVOID data)
 
 	HANDLE dir;
 	WIN32_FIND_DATA entry;
-	PVOID wow64token;
-	TCHAR finddir[MAX_PATH + 1];
 	int groupid = 0;
 
-	ourWow64DisableWow64FsRedirection(&wow64token);
-	if (PathCombine(finddir, dirname, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
-		panic("error producing version of \"%S\" for FindFirstFile()", dirname);
 	dir = FindFirstFile(finddir, &entry);
 	if (dir == INVALID_HANDLE_VALUE) {
 		DWORD e;
@@ -164,6 +169,7 @@ DWORD WINAPI getIcons(LPVOID data)
 	}
 	if (FindClose(dir) == 0)
 		panic("error closing \"%S\"", dirname);
+
 	ourWow64RevertWow64FsRedirection(wow64token);
 
 	if (PostMessage(mainwin, msgEnd, 0, 0) == 0)
@@ -228,4 +234,37 @@ static void addInvalidIcon(int groupid, int *itemid, TCHAR *filename)
 	item->pszText = toWideString(q);
 	free(q);
 	item->iItem = (*itemid)++;
+}
+
+static LPARAM filecount(TCHAR *dirname, TCHAR *finddir)
+{
+	HANDLE dir;
+	WIN32_FIND_DATA entry;
+	LPARAM count = 0;
+
+	dir = FindFirstFile(finddir, &entry);
+	if (dir == INVALID_HANDLE_VALUE) {
+		DWORD e;
+
+		e = GetLastError();
+		if (e == ERROR_FILE_NOT_FOUND)		// no files
+			return 0;
+		SetLastError(e);						// for panic()
+		panic("error opening \"%S\" for counting files", dirname);
+	}
+	for (;;) {
+		count++;
+		if (FindNextFile(dir, &entry) == 0) {
+			DWORD e;
+
+			e = GetLastError();
+			if (e == ERROR_NO_MORE_FILES)		// we're done
+				break;
+			SetLastError(e);						// for panic()
+			panic("error getting next filename in \"%S\" for counting files", dirname);
+		}
+	}
+	if (FindClose(dir) == 0)
+		panic("error closing \"%S\" for counting files", dirname);
+	return count;
 }

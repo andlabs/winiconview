@@ -100,6 +100,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 
 	switch (msg) {
 	case msgBegin:
+		printf("%d files\n", lparam);
 		currentCursor = LoadCursor(NULL, IDC_WAIT);
 		if (currentCursor == NULL)
 			panic("error loading busy cursor");

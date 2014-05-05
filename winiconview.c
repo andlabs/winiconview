@@ -94,22 +94,34 @@ void resizeListView(void)
 	}
 }
 
+HWND progressbar;
+
 LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	NMHDR *nmhdr;
 
 	switch (msg) {
 	case msgBegin:
-		printf("%d files\n", lparam);
 		currentCursor = LoadCursor(NULL, IDC_WAIT);
 		if (currentCursor == NULL)
 			panic("error loading busy cursor");
-		// TODO
+		progressbar = CreateWindowEx(0,
+			PROGRESS_CLASS, L"",
+			PBS_SMOOTH | WS_CHILD | WS_VISIBLE,
+			20, 20, 200, 40,
+			mainwin, NULL, hInstance, NULL);
+		if (progressbar == NULL)
+			panic("error making progressbar");
+		SendMessage(progressbar, PBM_SETRANGE32,
+			0, lparam);
+		SendMessage(progressbar, PBM_SETSTEP, 1, 0);
 		return 0;
 	case msgStep:
-		// TODO
+		SendMessage(progressbar, PBM_STEPIT, 0, 0);
 		return 0;
 	case msgEnd:
+		if (DestroyWindow(progressbar) == 0)
+			panic("error removing progressbar");
 		buildUI();
 		currentCursor = hDefaultCursor;
 		resizeListView();

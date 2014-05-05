@@ -31,13 +31,7 @@ void init(void)
 			usageret = 0;
 			goto usage;
 		}
-//	dirname = argv[optind];
-BOOL b;
-if (IsWow64Process(GetCurrentProcess(), &b) == 0)
-	panic("IsWow64Process() failed");
-dirname = L"C:\\Windows\\System32";
-if (b)
-dirname = L"C:\\Windows\\SysWow64";
+		dirname = argv[1];
 	} else {
 		HRESULT res;
 		BROWSEINFO bi;
@@ -52,18 +46,20 @@ dirname = L"C:\\Windows\\SysWow64";
 		pidl = SHBrowseForFolder(&bi);
 		if (pidl != NULL) {
 			// THIS WILL CUT OFF. BIG TODO.
-			TCHAR path[(4 * MAX_PATH) + 1];
+			// static so we can save it without doing /another/ string copy
+			static TCHAR path[(4 * MAX_PATH) + 1];
 
-			path[0] = L'\0';
+			path[0] = L'\0';			// TODO I forget why this was needed
 			// TODO resolve shortcuts
 			if (SHGetPathFromIDList(pidl, path) == FALSE)
 				panic("error extracting folder from PIDL from folder dialog");
-			printf("user selected %ws\n", path);
+			dirname = path;
 			CoTaskMemFree(pidl);
 		} else
 			printf("user aborted selection\n");
 		CoUninitialize();
-		exit(0);
+		if (dirname == NULL)		// don't quit if a directory was selected
+			exit(0);
 	}
 	return;
 

@@ -13,9 +13,10 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 
+#define PROGNAME (L"Windows Icon Viewer")
+
 // winiconview.c
 extern HINSTANCE hInstance;
-extern TCHAR *argv0;
 
 void setControlFont(HWND);
 

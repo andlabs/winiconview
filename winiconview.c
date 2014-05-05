@@ -9,7 +9,6 @@
 #endif
 
 HMODULE hInstance;
-TCHAR *argv0 = NULL;
 
 static HFONT controlfont;
 
@@ -24,7 +23,6 @@ static void parseArgs(void)
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
 	if (argv == NULL)
 		panic("error splitting command line into argc/argv form");
-	argv0 = argv[0];
 	if (argc > 2)
 		goto usage;
 	if (argc == 2) {

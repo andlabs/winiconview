@@ -10,6 +10,7 @@ all:
 
 64: all
 
+# TODO prune the DLLs
 neededFLAGS = --std=c99 \
 	-luser32 -lkernel32 -lcomctl32 \
 	-lcomdlg32 -lgdi32 -lmsimg32 \

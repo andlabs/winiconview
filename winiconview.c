@@ -95,6 +95,16 @@ void setControlFont(HWND hwnd)
 	SendMessage(hwnd, WM_SETFONT, (WPARAM) controlfont, (LPARAM) TRUE);
 }
 
+HFONT selectControlFont(HDC dc)
+{
+	HFONT prev;
+
+	prev = (HFONT) SelectObject(dc, controlfont);
+	if (prev == NULL)
+		panic("error selecting control font into DC");
+	return prev;
+}
+
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	HWND mainwin;

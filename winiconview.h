@@ -20,6 +20,7 @@ extern HINSTANCE hInstance;
 extern int nCmdShow;
 
 void setControlFont(HWND);
+HFONT selectControlFont(HDC);
 
 // mainwin.c
 void registerMainWindowClass(void);

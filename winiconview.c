@@ -74,49 +74,64 @@ HWND mainwin;
 
 #define ID_LISTVIEW 100
 
-HCURSOR currentCursor;
-
-HWND label, progressbar;
+struct mainwinData {
+	HCURSOR currentCursor;
+	HWND label;
+	HWND progressbar;
+	HWND listview;
+};
 
 LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
+	struct mainwinData *data;
 	NMHDR *nmhdr;
+
+	// we can assume the GetWindowLongPtr()/SetWindowLongPtr() calls will work; see comments of http://blogs.msdn.com/b/oldnewthing/archive/2014/02/03/10496248.aspx
+	data = (struct mainwinData *) GetWindowLongPtr(hwnd, GWL_USERDATA);
+	if (data == NULL) {
+		data = (struct mainwinData *) malloc(sizeof (struct mainwinData));
+		if (data == NULL)
+			panic("error allocating main window data structure");
+		ZeroMemory(data, sizeof (struct mainwinData));
+		data->currentCursor = hDefaultCursor;
+		SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR) data);
+	}
 
 	switch (msg) {
 	case msgBegin:
-		currentCursor = LoadCursor(NULL, IDC_WAIT);
-		if (currentCursor == NULL)
+		data->currentCursor = LoadCursor(NULL, IDC_WAIT);
+		if (data->currentCursor == NULL)
 			panic("error loading busy cursor");
-		label = CreateWindowEx(0,
+		data->label = CreateWindowEx(0,
 			L"STATIC", L"Gathering icons. Please wait.",
 			SS_NOPREFIX | SS_LEFTNOWORDWRAP | WS_CHILD | WS_VISIBLE,
 			20, 20, 200, 20,
 			mainwin, NULL, hInstance, NULL);
-		if (label == NULL)
+		if (data->label == NULL)
 			panic("error making \"please wait\" label");
-		progressbar = CreateWindowEx(0,
+		data->progressbar = CreateWindowEx(0,
 			PROGRESS_CLASS, L"",
 			PBS_SMOOTH | WS_CHILD | WS_VISIBLE,
 			20, 45, 200, 40,
 			mainwin, NULL, hInstance, NULL);
-		if (progressbar == NULL)
+		if (data->progressbar == NULL)
 			panic("error making progressbar");
-		SendMessage(progressbar, PBM_SETRANGE32,
+		SendMessage(data->progressbar, PBM_SETRANGE32,
 			0, lparam);
-		SendMessage(progressbar, PBM_SETSTEP, 1, 0);
+		SendMessage(data->progressbar, PBM_SETSTEP, 1, 0);
 		return 0;
 	case msgStep:
-		SendMessage(progressbar, PBM_STEPIT, 0, 0);
+		SendMessage(data->progressbar, PBM_STEPIT, 0, 0);
 		return 0;
 	case msgEnd:
 		// kill redraw because this is a heavy operation
 		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) FALSE, 0);
-		if (DestroyWindow(label) == 0)
+		if (DestroyWindow(data->label) == 0)
 			panic("error removing \"please wait\" label");
-		if (DestroyWindow(progressbar) == 0)
+		if (DestroyWindow(data->progressbar) == 0)
 			panic("error removing progressbar");
 		makeListView(mainwin, (HMENU) ID_LISTVIEW);
-		currentCursor = hDefaultCursor;		// TODO move to end and make atomic
+		data->currentCursor = hDefaultCursor;		// TODO move to end and make atomic
 		resizeListView(mainwin);
 		SendMessage(mainwin, WM_SETREDRAW, (WPARAM) TRUE, 0);
 		RedrawWindow(mainwin, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
@@ -124,7 +139,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		// while I'm here, TODO figure out why the icons now have a black border around them
 		return 0;
 	case WM_SETCURSOR:
-		SetCursor(currentCursor);
+		SetCursor(data->currentCursor);
 		return TRUE;
 	case WM_NOTIFY:
 		nmhdr = (NMHDR *) lparam;
@@ -176,7 +191,6 @@ int CALLBACK WinMain(HINSTANCE _hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 	init();
 	hInstance = _hInstance;
 	initwin();
-	currentCursor = hDefaultCursor;
 
 	makeMainWindow();
 	data.mainwin = mainwin;

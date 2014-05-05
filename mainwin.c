@@ -197,7 +197,6 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		RedrawWindow(hwnd, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
 		if (SetFocus(data->listview) == NULL)
 			panic("error setting focus to the list view");
-		// while I'm here, TODO figure out why the icons now have a black border around them
 		return 0;
 	case WM_SETCURSOR:
 		SetCursor(data->currentCursor);

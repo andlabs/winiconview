@@ -83,12 +83,13 @@ DWORD WINAPI getIcons(LPVOID data)
 
 	int itemid = 1;		// 0 is the dummy item
 
+	// ILC_MASK for icons that use a transparency mask; ILC_COLOR32 for those that don't so we can support newer icons
 	largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
-		ILC_COLOR32, 100, 100);
+		ILC_COLOR32 | ILC_MASK, 100, 100);
 	if (largeicons == NULL)
 		panic("error creating large icon list for list view");
 	smallicons = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
-		ILC_COLOR32, 100, 100);
+		ILC_COLOR32 | ILC_MASK, 100, 100);
 	if (smallicons == NULL)
 		panic("error creating small icon list for list view");
 

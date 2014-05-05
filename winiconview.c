@@ -73,15 +73,49 @@ usage:
 	exit(usageret);
 }
 
+HWND mainwin;
 HWND listview = NULL;
 #define ID_LISTVIEW 100
 HIMAGELIST iconlists[2];
+
+HCURSOR currentCursor;
+
+void buildUI(void);
+
+void resizeListView(void)
+{
+	if (listview != NULL) {
+		RECT r;
+
+		if (GetClientRect(mainwin, &r) == 0)
+			panic("error getting new list view size");
+		if (MoveWindow(listview, 0, 0, r.right - r.left, r.bottom - r.top, TRUE) == 0)
+			panic("error resizing list view");
+	}
+}
 
 LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	NMHDR *nmhdr;
 
 	switch (msg) {
+	case msgBegin:
+		currentCursor = LoadCursor(NULL, IDC_WAIT);
+		if (currentCursor == NULL)
+			panic("error loading busy cursor");
+		// TODO
+		return 0;
+	case msgStep:
+		// TODO
+		return 0;
+	case msgEnd:
+		buildUI();
+		currentCursor = hDefaultCursor;
+		resizeListView();
+		return 0;
+	case WM_SETCURSOR:
+		SetCursor(currentCursor);
+		return TRUE;
 	case WM_NOTIFY:
 		nmhdr = (NMHDR *) lparam;
 		if (nmhdr->idFrom == ID_LISTVIEW) {
@@ -112,14 +146,7 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 		PostQuitMessage(0);
 		return 0;
 	case WM_SIZE:
-		if (listview != NULL) {
-			RECT r;
-
-			if (GetClientRect(hwnd, &r) == 0)
-				panic("error getting new list view size");
-			if (MoveWindow(listview, 0, 0, r.right - r.left, r.bottom - r.top, TRUE) == 0)
-				panic("error resizing list view");
-		}
+		resizeListView();
 		return 0;
 	default:
 		return DefWindowProc(hwnd, msg, wparam, lparam);
@@ -127,10 +154,9 @@ LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 	panic("oops: message %ud does not return anything; bug in wndproc()", msg);
 }
 
-HWND makeMainWindow(void)
+void makeMainWindow(void)
 {
 	WNDCLASS cls;
-	HWND hwnd;
 
 	ZeroMemory(&cls, sizeof (WNDCLASS));
 	cls.lpszClassName = L"mainwin";
@@ -141,18 +167,17 @@ HWND makeMainWindow(void)
 	cls.hbrBackground = (HBRUSH) (COLOR_BTNFACE + 1);
 	if (RegisterClass(&cls) == 0)
 		panic("error registering window class");
-	hwnd = CreateWindowEx(0,
+	mainwin = CreateWindowEx(0,
 		L"mainwin", L"Main Window",
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL, NULL, hInstance, NULL);
-	if (hwnd == NULL)
+	if (mainwin == NULL)
 		panic("opening main window failed");
-	return hwnd;
 }
 
-void buildUI(HWND mainwin)
+void buildUI(void)
 {
 #define CSTYLE (WS_CHILD | WS_VISIBLE)
 #define CXSTYLE (0)
@@ -165,8 +190,6 @@ void buildUI(HWND mainwin)
 		mainwin, (HMENU) ID_LISTVIEW, hInstance, NULL);
 	if (listview == NULL)
 		panic("error creating list view");
-
-	getIcons(dirname);
 
 	if (SendMessage(listview, LVM_SETIMAGELIST,
 		LVSIL_NORMAL, (LPARAM) largeicons) == (LRESULT) NULL)
@@ -225,15 +248,19 @@ void initwin(void);
 
 int CALLBACK WinMain(HINSTANCE _hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
-	HWND mainwin;
 	MSG msg;
+	struct giThreadData data;
 
 	init();
 	hInstance = _hInstance;
 	initwin();
+	currentCursor = hDefaultCursor;
 
-	mainwin = makeMainWindow();
-	buildUI(mainwin);
+	makeMainWindow();
+	data.mainwin = mainwin;
+	data.dirname = dirname;
+	if (CreateThread(NULL, 0, getIcons, &data, 0, NULL) == NULL)
+		panic("error creating worker thread to get icons");
 	ShowWindow(mainwin, nCmdShow);
 	if (UpdateWindow(mainwin) == 0)
 		panic("UpdateWindow(mainwin) failed in first show");
@@ -280,7 +307,7 @@ void initwin(void)
 	hDefaultIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_APPLICATION));
 	if (hDefaultIcon == NULL)
 		panic("error getting default window class icon");
-	hDefaultCursor = LoadCursor(NULL, MAKEINTRESOURCE(IDC_ARROW));
+	hDefaultCursor = LoadCursor(NULL, IDC_ARROW);
 	if (hDefaultCursor == NULL)
 		panic("error getting default window cursor");
 	icc.dwSize = sizeof (INITCOMMONCONTROLSEX);

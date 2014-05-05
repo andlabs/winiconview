@@ -64,7 +64,12 @@ static void addInvalidIcon(int, int *, TCHAR *);
 
 DWORD WINAPI getIcons(LPVOID data)
 {
-	TCHAR *dirname = (TCHAR *) data;
+	struct giThreadData *threadData = (struct giThreadData *) data;
+	HWND mainwin = threadData->mainwin;
+	TCHAR *dirname = threadData->dirname;
+
+	if (PostMessage(mainwin, msgBegin, 0, 0) == 0)
+		panic("error notifying main window that processing has begun");
 
 	int itemid = 1;		// 0 is the dummy item
 
@@ -101,6 +106,9 @@ DWORD WINAPI getIcons(LPVOID data)
 	}
 	for (;;) {
 		TCHAR filename[MAX_PATH + 1];
+
+		if (PostMessage(mainwin, msgStep, 0, 0) == 0)
+			panic("error notifying main window that processing has moved to the next file");
 
 		if (PathCombine(filename, dirname, entry.cFileName) == NULL)
 			panic("error allocating combined filename \"%S\\%S\"",
@@ -157,6 +165,9 @@ DWORD WINAPI getIcons(LPVOID data)
 	if (FindClose(dir) == 0)
 		panic("error closing \"%S\"", dirname);
 	ourWow64RevertWow64FsRedirection(wow64token);
+
+	if (PostMessage(mainwin, msgEnd, 0, 0) == 0)
+		panic("error notifying main window that processing has ended");
 	return 0;
 }
 

@@ -24,6 +24,17 @@ void ourWow64RevertWow64FsRedirection(PVOID);
 
 // the rest of this file is geticons.c
 
+enum {
+	msgBegin = WM_APP + 1,
+	msgStep,
+	msgEnd,
+};
+
+struct giThreadData {
+	HWND mainwin;
+	TCHAR *dirname;
+};
+
 extern HIMAGELIST largeicons, smallicons;
 extern LVGROUP *groups;
 extern LVITEM *items;

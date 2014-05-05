@@ -299,7 +299,7 @@ DWORD iccFlags =
 	ICC_LISTVIEW_CLASSES |			// list-view, header
 //	ICC_NATIVEFNTCTL_CLASS |		// native font
 //	ICC_PAGESCROLLER_CLASS |		// pager
-//	ICC_PROGRESS_CLASS |			// progress bar
+	ICC_PROGRESS_CLASS |			// progress bar
 //	ICC_STANDARD_CLASSES |		// "one of the intrinsic User32 control classes"
 //	ICC_TAB_CLASSES |				// tab, tooltip
 //	ICC_TREEVIEW_CLASSES |		// tree-view, tooltip

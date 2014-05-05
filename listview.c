@@ -6,13 +6,9 @@ static HIMAGELIST iconlists[2];
 
 void makeListView(HWND parent, HMENU controlID)
 {
-#define CSTYLE (WS_CHILD | WS_VISIBLE)
-#define CXSTYLE (0)
-#define SETFONT(hwnd) SendMessage(hwnd, WM_SETFONT, (WPARAM) controlfont, (LPARAM) TRUE);
-
-	listview = CreateWindowEx(CXSTYLE,
+	listview = CreateWindowEx(0,
 		WC_LISTVIEW, L"",
-		LVS_ICON | WS_VSCROLL | CSTYLE,
+		LVS_ICON | WS_VSCROLL | WS_CHILD | WS_VISIBLE,
 		0, 0, 100, 100,
 		parent, controlID, hInstance, NULL);
 	if (listview == NULL)

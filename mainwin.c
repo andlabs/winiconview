@@ -39,6 +39,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			hwnd, NULL, hInstance, NULL);
 		if (data->label == NULL)
 			panic("error making \"please wait\" label");
+		setControlFont(data->label);
 		data->progressbar = CreateWindowEx(0,
 			PROGRESS_CLASS, L"",
 			PBS_SMOOTH | WS_CHILD | WS_VISIBLE,

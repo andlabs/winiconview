@@ -15,6 +15,9 @@
 
 // winiconview.c
 extern HINSTANCE hInstance;
+extern TCHAR *argv0;
+
+void setControlFont(HWND);
 
 // mainwin.c
 void registerMainWindowClass(void);
@@ -31,8 +34,7 @@ TCHAR *toWideString(char *what);
 void ourWow64DisableWow64FsRedirection(PVOID *);
 void ourWow64RevertWow64FsRedirection(PVOID);
 
-// the rest of this file is geticons.c
-
+// geticons.c
 enum {
 	msgBegin = WM_APP + 1,
 	msgStep,

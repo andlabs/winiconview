@@ -9,11 +9,13 @@
 #endif
 
 HMODULE hInstance;
-HFONT controlfont;
+TCHAR *argv0 = NULL;
+
+static HFONT controlfont;
 
 TCHAR *dirname = NULL;
 
-void init(void)
+static void parseArgs(void)
 {
 	int usageret = EXIT_FAILURE;
 	int argc;
@@ -22,6 +24,7 @@ void init(void)
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
 	if (argv == NULL)
 		panic("error splitting command line into argc/argv form");
+	argv0 = argv[0];
 	if (argc > 2)
 		goto usage;
 	if (argc == 2) {
@@ -68,17 +71,38 @@ usage:
 	exit(usageret);
 }
 
-void initwin(void);
+static void initSharedWindowsStuff(HINSTANCE winmainhInstance)
+{
+	INITCOMMONCONTROLSEX icc;
+	NONCLIENTMETRICS ncm;
 
-int CALLBACK WinMain(HINSTANCE _hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+	hInstance = winmainhInstance;
+	icc.dwSize = sizeof (INITCOMMONCONTROLSEX);
+	icc.dwICC = ICC_LISTVIEW_CLASSES | ICC_PROGRESS_CLASS;
+	if (InitCommonControlsEx(&icc) == FALSE)
+		panic("error initializing Common Controls");
+	ncm.cbSize = sizeof (NONCLIENTMETRICS);
+	if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
+		sizeof (NONCLIENTMETRICS), &ncm, 0) == 0)
+		panic("error getting non-client metrics for getting control font");
+	controlfont = CreateFontIndirect(&ncm.lfMessageFont);
+	if (controlfont == NULL)
+		panic("error getting control font");
+}
+
+void setControlFont(HWND hwnd)
+{
+	SendMessage(hwnd, WM_SETFONT, (WPARAM) controlfont, (LPARAM) TRUE);
+}
+
+int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
 	HWND mainwin;
 	MSG msg;
 	struct giThreadData data;
 
-	init();
-	hInstance = _hInstance;
-	initwin();
+	parseArgs();
+	initSharedWindowsStuff(hInstance);
 	registerMainWindowClass();
 
 	mainwin = makeMainWindow();
@@ -102,42 +126,4 @@ int CALLBACK WinMain(HINSTANCE _hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdL
 		DispatchMessage(&msg);
 	}
 	return 0;
-}
-
-DWORD iccFlags =
-//	ICC_ANIMATE_CLASS |			// animation control
-//	ICC_BAR_CLASSES |				// toolbar, statusbar, trackbar, tooltip
-//	ICC_COOL_CLASSES |			// rebar
-//	ICC_DATE_CLASSES |			// date and time picker
-//	ICC_HOTKEY_CLASS |			// hot key
-//	ICC_INTERNET_CLASSES |		// IP address entry field
-//	ICC_LINK_CLASS |				// hyperlink
-	ICC_LISTVIEW_CLASSES |			// list-view, header
-//	ICC_NATIVEFNTCTL_CLASS |		// native font
-//	ICC_PAGESCROLLER_CLASS |		// pager
-	ICC_PROGRESS_CLASS |			// progress bar
-//	ICC_STANDARD_CLASSES |		// "one of the intrinsic User32 control classes"
-//	ICC_TAB_CLASSES |				// tab, tooltip
-//	ICC_TREEVIEW_CLASSES |		// tree-view, tooltip
-//	ICC_UPDOWN_CLASS |			// up-down
-//	ICC_USEREX_CLASSES |			// ComboBoxEx
-//	ICC_WIN95_CLASSES |			// some of the above
-	0;
-
-void initwin(void)
-{
-	INITCOMMONCONTROLSEX icc;
-	NONCLIENTMETRICS ncm;
-
-	icc.dwSize = sizeof (INITCOMMONCONTROLSEX);
-	icc.dwICC = iccFlags;
-	if (InitCommonControlsEx(&icc) == FALSE)
-		panic("error initializing Common Controls");
-	ncm.cbSize = sizeof (NONCLIENTMETRICS);
-	if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
-		sizeof (NONCLIENTMETRICS), &ncm, 0) == 0)
-		panic("error getting non-client metrics for getting control font");
-	controlfont = CreateFontIndirect(&ncm.lfMessageFont);
-	if (controlfont == NULL)
-		panic("error getting control font");
 }

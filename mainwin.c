@@ -223,7 +223,6 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			panic(L"error removing progressbar");
 		data->listview = makeListView(hwnd, (HMENU) ID_LISTVIEW,
 			(struct giThreadOutput *) lparam);
-		data->currentCursor = arrowCursor;		// TODO move to end and make atomic
 		// do this before restoring the window rect because the non-client area's size changed when we disabled resize
 		enableResize(hwnd);
 		if (MoveWindow(hwnd, data->defaultWindowRect.left, data->defaultWindowRect.top,
@@ -236,6 +235,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		RedrawWindow(hwnd, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
 		if (SetFocus(data->listview) == NULL)
 			panic(L"error setting focus to the list view");
+		data->currentCursor = arrowCursor;			// TODO effective too soon?
 		return 0;
 	case WM_SETCURSOR:
 		SetCursor(data->currentCursor);

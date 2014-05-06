@@ -11,6 +11,11 @@ static HFONT controlfont;
 
 static TCHAR *dirname = NULL;
 
+// specifically formulated to fit in the default size with at least the font used by Windows XP and 7 by default because the Browse for Folders dialog doesn't seem to determine how big it should make the title area...
+static TCHAR *folderDialogHelpText =
+	L"Choose a folder from the list below to see its icons. WOW64 redirection is disabled here. "
+	PROGNAME L" won't enter subfolders; it'll only scan files in the chosen folder.";
+
 static void parseArgs(void)
 {
 	int usageret = EXIT_FAILURE;
@@ -40,7 +45,8 @@ static void parseArgs(void)
 		if (res != S_OK && res != S_FALSE)
 			panic(L"error initializing COM for browse for folders dialog");
 		ZeroMemory(&bi, sizeof (BROWSEINFO));
-		// TODO dialog properties
+		bi.lpszTitle = folderDialogHelpText;
+		bi.ulFlags = BIF_EDITBOX | BIF_NEWDIALOGSTYLE | BIF_NONEWFOLDERBUTTON;
 		pidl = SHBrowseForFolder(&bi);
 		if (pidl != NULL) {
 			// THIS WILL CUT OFF. BIG TODO.
@@ -53,8 +59,7 @@ static void parseArgs(void)
 				panic(L"error extracting folder from PIDL from folder dialog");
 			dirname = path;
 			CoTaskMemFree(pidl);
-		} else
-			printf("user aborted selection\n");
+		}
 		CoUninitialize();
 		ourWow64RevertWow64FsRedirection(wow64token);
 		if (dirname == NULL)		// don't quit if a directory was selected

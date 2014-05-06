@@ -101,6 +101,8 @@ DWORD WINAPI getIcons(LPVOID vinput)
 	HWND mainwin = input->mainwin;
 	TCHAR *dirname = input->dirname;
 
+	free(input);		// we allocated it with malloc() back in wndproc() but now we're done with it; wndproc() forgets about it so free it here
+
 	struct giThreadData d;
 
 	ZeroMemory(&d, sizeof (struct giThreadData));

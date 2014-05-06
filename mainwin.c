@@ -163,7 +163,6 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		threadInput->dirname = data->dirname;
 		if (CreateThread(NULL, 0, getIcons, threadInput, 0, NULL) == NULL)
 			panic(L"error creating worker thread to get icons");
-		// TODO free threadData in the thread
 		// let's defer this to DefWindowProc(); just to be safe, instead of just returning TRUE (TODO)
 		// I THINK that's what the oldnewthing link above does anyway
 		return DefWindowProc(hwnd, msg, wparam, lparam);

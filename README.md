@@ -10,7 +10,7 @@ On Windows Vista and up, groups can also be collapsed.
 
 You can alternatively provide a directory name to scan on the command line.
 
-This program will not scan recursively into directories; it will only show files within that directory.
+This program will not scan recursively into directories; it will only show files within that directory. If running as a 32-bit process on 64-bit Windows, the automatic filesystem redirection provided by WOW64 is disabled during the file browsing and icon gathering, so you can peek through both 32-bit and 64-bit files with both 32-bit and 64-bit builds.
 
 This program requires Common Controls version 6, so will only run on Windows XP and up. I don't know what the minimum service pack version of Windows XP is supported. Right now you need to use a manifest, which is provided in the source distribution.
 
@@ -35,3 +35,4 @@ TODO
 NICE THINGS TO HAVE
 - get the resource ID for each icon and print that
 - type in the list view to navigate groups instead of icon labels
+- long-filename aware in general; there's a TODO comment about it but still

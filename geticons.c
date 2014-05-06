@@ -7,6 +7,39 @@ struct giThreadData {
 	size_t nItemsAlloc;
 };
 
+static UINT systemDependentGroupFlags = 0;
+
+void initGetIcons(void)
+{
+	// TODO I feel uneasy about using an OS version check for this, but I don't know how to test for the existence of a style flag at runtime...
+	OSVERSIONINFOEX ver;
+	DWORDLONG cond = 0;
+
+	ZeroMemory(&ver, sizeof (OSVERSIONINFOEX));
+	ver.dwOSVersionInfoSize = sizeof (OSVERSIONINFOEX);
+	ver.dwMajorVersion = 6;		// Windows Vista and Windows Server 2008
+	ver.dwMinorVersion = 0;
+	ver.wServicePackMajor = 0;
+	ver.wServicePackMinor = 0;
+	VER_SET_CONDITION(cond, VER_MAJORVERSION, VER_GREATER_EQUAL);
+	VER_SET_CONDITION(cond, VER_MINORVERSION, VER_GREATER_EQUAL);
+	VER_SET_CONDITION(cond, VER_SERVICEPACKMAJOR, VER_GREATER_EQUAL);
+	VER_SET_CONDITION(cond, VER_SERVICEPACKMINOR, VER_GREATER_EQUAL);
+	if (VerifyVersionInfo(&ver,
+		VER_MAJORVERSION | VER_MINORVERSION | VER_SERVICEPACKMAJOR | VER_SERVICEPACKMINOR,
+		cond) == 0) {
+		DWORD e;
+
+		e = GetLastError();
+		if (e == ERROR_OLD_WIN_VERSION)
+			return;
+		SetLastError(e);		// for panic()
+		panic(L"error checking for Windows Vista or newer to enable collapsible listview groups");
+	}
+	// otherwise we're good
+	systemDependentGroupFlags = LVGS_COLLAPSIBLE;
+}
+
 static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 {
 	LVGROUP *g;
@@ -21,6 +54,10 @@ static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 	ZeroMemory(g, sizeof (LVGROUP));
 	g->cbSize = sizeof (LVGROUP);
 	g->mask = LVGF_HEADER | LVGF_GROUPID;
+	if (systemDependentGroupFlags != 0) {
+		g->mask |= LVGF_STATE;
+		g->state = systemDependentGroupFlags;
+	}
 	g->pszHeader = _wcsdup(name);
 	if (g->pszHeader == NULL)
 		panic(L"error making copy of filename %s for grouping/sorting", name);

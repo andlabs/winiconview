@@ -65,6 +65,7 @@ struct giThreadOutput {
 	int ngroupnames;
 };
 
+void initGetIcons(void);
 DWORD WINAPI getIcons(LPVOID);
 INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data);
 

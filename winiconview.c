@@ -108,6 +108,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 	parseArgs();
 	initSharedWindowsStuff(hInstance, nCmdShow);
+	initGetIcons();
 	registerMainWindowClass();
 
 	mainwin = makeMainWindow(dirname);

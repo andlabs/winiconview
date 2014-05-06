@@ -14,6 +14,6 @@ neededFLAGS = /TP \
 	shlwapi.lib
 
 all:
-	del winiconview.exe *.obj
+	del winiconview.exe *.obj *.ilk *.pdb
 	$(CC) $(debugFLAGS) /Fewiniconview.exe *.c $(CFLAGS) $(LDFLAGS) $(warnFLAGS) $(neededFLAGS)
 	del *.obj

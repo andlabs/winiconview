@@ -218,12 +218,11 @@ static void addIcons(struct giThreadData *d, UINT nIcons, HICON *large, HICON *s
 		item->mask = LVIF_IMAGE | LVIF_GROUPID | LVIF_TEXT;
 		item->iImage = index;
 		item->iGroupId = groupid;
-		char *q;
-		asprintf(&q, "%d", *itemid);
-		item->pszText = toWideString(q);
-		free(q);
+		item->pszText = ourawsprintf(L"%d", *itemid);
+		if (item->pszText == NULL)
+			panic(L"error giving list view item %u from \"%s\" text", i, filename);
 		item->iItem = (*itemid)++;
-		// TODO above errors (note plural) needs to be changed to represent the correct icon count
+		// TODO above errors (note plural) and the one below needs to be changed to represent the correct icon count
 	}
 }
 
@@ -236,10 +235,9 @@ static void addInvalidIcon(struct giThreadData *d, int groupid, int *itemid, TCH
 	ZeroMemory(item, sizeof (LVITEM));
 	item->mask = LVIF_GROUPID | LVIF_TEXT;
 	item->iGroupId = groupid;
-	char *q;
-	asprintf(&q, "%d (invalid)", *itemid);
-	item->pszText = toWideString(q);
-	free(q);
+	item->pszText = ourawsprintf(L"%d (invalid)", *itemid);
+	if (item->pszText == NULL)
+		panic(L"error giving list view invalid item from \"%s\" text", filename);
 	item->iItem = (*itemid)++;
 }
 

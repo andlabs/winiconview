@@ -70,6 +70,8 @@ TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg)
 	// BIG TODO: if Application Verifier is patrolling this process, the _vsnwprintf() call will CRASH and I have no idea why :S
 	if (_vsnwprintf(out, (size_t) n, fmt, arg) == -1)
 		return NULL;
+	// TODO apparently the terminating null ISN'T written by the above?!
+	out[n] = L'\0';
 	return out;
 }
 

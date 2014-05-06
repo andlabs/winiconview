@@ -3,7 +3,6 @@
 #define UNICODE
 #define STRICT
 #define STRICT_TYPED_ITEMIDS
-#define _GNU_SOURCE		// needed to declare asprintf()/vasprintf()
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

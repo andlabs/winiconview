@@ -34,7 +34,7 @@ void panic(TCHAR *fmt, ...)
 	fprintf(stderr, "%S\n", fullmsg);
 	MessageBox(NULL,
 		fullmsg,
-		L"PANIC",			// TODO
+		PROGNAME,
 		MB_OK | MB_ICONERROR | MB_SYSTEMMODAL);
 	// TODO find a reasonable way to handle failures in the MessageBox() call?
 	va_end(arg);

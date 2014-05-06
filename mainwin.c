@@ -248,7 +248,7 @@ HWND makeMainWindow(TCHAR *dirname)
 	HWND mainwin;
 
 	mainwin = CreateWindowEx(0,
-		L"mainwin", L"Main Window",
+		L"mainwin", PROGNAME,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		CW_USEDEFAULT, CW_USEDEFAULT,

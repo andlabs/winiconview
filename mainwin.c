@@ -113,6 +113,28 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 		panic(L"error releasing window DC for laying out progress controls");
 }
 
+static void disableResize(HWND hwnd)
+{
+	DWORD style;
+	DWORD q;
+
+	style = (DWORD) GetWindowLongPtr(hwnd, GWL_STYLE);
+	// imagine the next three liens as a single line; I'm just doing it this way for the sake of C's automatic promotion rules
+	q = WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+	q = ~q;
+	style &= q;
+	SetWindowLongPtr(hwnd, GWL_STYLE, (LONG_PTR) style);
+}
+
+static void enableResize(HWND hwnd)
+{
+	DWORD style;
+
+	style = (DWORD) GetWindowLongPtr(hwnd, GWL_STYLE);
+	style |= WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
+	SetWindowLongPtr(hwnd, GWL_STYLE, (LONG_PTR) style);
+}
+
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
 	struct mainwinData *data;
@@ -169,6 +191,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		SendMessage(data->progressbar, PBM_SETRANGE32,
 			0, lparam);
 		SendMessage(data->progressbar, PBM_SETSTEP, 1, 0);
+		// do this before laying out the progress window because this changes the non-client area's size
+		disableResize(hwnd);
 		properlyLayOutProgressWindow(hwnd, data);
 		// and now that everything's ready we can FINALLY show the main window
 		ShowWindow(hwnd, nCmdShow);
@@ -200,6 +224,8 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		data->listview = makeListView(hwnd, (HMENU) ID_LISTVIEW,
 			(struct giThreadOutput *) lparam);
 		data->currentCursor = arrowCursor;		// TODO move to end and make atomic
+		// do this before restoring the window rect because the non-client area's size changed when we disabled resize
+		enableResize(hwnd);
 		if (MoveWindow(hwnd, data->defaultWindowRect.left, data->defaultWindowRect.top,
 			data->defaultWindowRect.right - data->defaultWindowRect.left,
 			data->defaultWindowRect.bottom - data->defaultWindowRect.top,

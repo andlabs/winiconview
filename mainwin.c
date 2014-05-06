@@ -121,14 +121,14 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	struct giThreadInput *threadInput;
 
 	// we can assume the GetWindowLongPtr()/SetWindowLongPtr() calls will work; see comments of http://blogs.msdn.com/b/oldnewthing/archive/2014/02/03/10496248.aspx
-	data = (struct mainwinData *) GetWindowLongPtr(hwnd, GWL_USERDATA);
+	data = (struct mainwinData *) GetWindowLongPtr(hwnd, GWLP_USERDATA);
 	if (data == NULL) {
 		data = (struct mainwinData *) malloc(sizeof (struct mainwinData));
 		if (data == NULL)
 			panic(L"error allocating main window data structure");
 		ZeroMemory(data, sizeof (struct mainwinData));
 		data->currentCursor = arrowCursor;
-		SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR) data);
+		SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR) data);
 	}
 
 	switch (msg) {

@@ -52,6 +52,11 @@ TCHAR *ourawsprintf(TCHAR *fmt, ...)
 	return out;
 }
 
+// HUGE TODO - VISUAL C++ 2010 DOESN'T PROVIDE VA_COPY AND THIS IS A **MAJOR HACK**
+#ifndef va_copy
+#define va_copy(d, s) ((d) = (s))
+#endif
+
 // don't call panic() here because panic() calls this!
 TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg)
 {

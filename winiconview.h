@@ -12,6 +12,9 @@
 #include <shlobj.h>
 #include <shlwapi.h>
 
+// oh my fucking god you have got to be fucking kidding me THANKS RPCNDR.H
+#undef small
+
 #define PROGNAME (L"Windows Icon Viewer")
 
 // winiconview.c

@@ -134,7 +134,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	switch (msg) {
 	case WM_NCCREATE:
 		cs = (CREATESTRUCT *) lparam;
-		data->dirname = cs->lpCreateParams;
+		data->dirname = (TCHAR *) cs->lpCreateParams;
 		threadInput = (struct giThreadInput *) malloc(sizeof (struct giThreadInput));
 		if (threadInput == NULL)
 			panic(L"error allocating getIcons() thread data structure for \"%s\"", data->dirname);

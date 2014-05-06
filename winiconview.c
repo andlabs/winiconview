@@ -1,6 +1,6 @@
 // pietro gagliardi 1 may 2014
 // scratch Windows program by pietro gagliardi 17 april 2014
-// fixed typos and added toWideString() 1 may 2014
+// fixed typos 1 may 2014
 // borrows code from the scratch GTK+ program (16-17 april 2014) and from code written 31 march 2014 and 11-12 april 2014
 #include "winiconview.h"
 

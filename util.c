@@ -80,33 +80,6 @@ TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg)
 	return out;
 }
 
-TCHAR *toWideString(char *what)
-{
-	TCHAR *buf;
-	int n;
-	size_t len;
-
-	len = strlen(what);
-	if (len == 0) {
-		buf = (TCHAR *) malloc(sizeof (TCHAR));
-		if (buf == NULL)
-			goto mallocfail;
-		buf[0] = L'\0';
-	} else {
-		n = MultiByteToWideChar(CP_UTF8, 0, what, -1, NULL, 0);
-		if (n == 0)
-			panic(L"error getting number of bytes to convert \"%S\" to UTF-16", what);
-		buf = (TCHAR *) malloc((n + 1) * sizeof (TCHAR));
-		if (buf == NULL)
-			goto mallocfail;
-		if (MultiByteToWideChar(CP_UTF8, 0, what, -1, buf, n) == 0)
-			panic(L"error converting \"%S\" to UTF-16", what);
-	}
-	return buf;
-mallocfail:
-	panic(L"error allocating memory for UTF-16 version of \"%S\"", what);
-}
-
 static BOOL wow64loaded = FALSE;
 static BOOL (WINAPI *wow64disable)(PVOID *);
 static BOOL (WINAPI *wow64enable)(PVOID);

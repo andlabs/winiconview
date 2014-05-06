@@ -10,8 +10,6 @@ struct giThreadData {
 static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 {
 	LVGROUP *g;
-	LRESULT n;
-	TCHAR *wname;
 
 	if (d->o->nGroups >= d->nGroupsAlloc) {		// need more memory
 		d->nGroupsAlloc += 200;		// will handle first run too

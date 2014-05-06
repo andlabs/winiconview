@@ -3,14 +3,21 @@
 #define UNICODE
 #define STRICT
 #define STRICT_TYPED_ITEMIDS
+#define WINVER 0x0501			// to get struct sizes right for Windows XP; see http://stackoverflow.com/questions/5803103/grid-control-run-time-error-when-run-at-windows-xp-in-visual-studio-2008
+#define _WIN32_WINNT 0x0501
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <windows.h>
-#include <commctrl.h>		// needed for InitCommonControlsEx() (thanks Xeek in irc.freenode.net/#winapi for confirming)
+#include <commctrl.h>			// needed for InitCommonControlsEx() (thanks Xeek in irc.freenode.net/#winapi for confirming)
 #include <shlobj.h>
 #include <shlwapi.h>
+
+// the WINVER/_WIN32_WINNT defines above could have the consequence of leaving this undefined (and it's not defined by the MinGW headers so)
+#ifndef LVGS_COLLAPSIBLE
+#define LVGS_COLLAPSIBLE 0x00000008		// value from Microsoft's commctrl.h
+#endif
 
 // oh my fucking god you have got to be fucking kidding me THANKS RPCNDR.H
 #undef small

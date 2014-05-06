@@ -13,11 +13,11 @@ HWND makeListView(HWND parent, HMENU controlID, struct giThreadOutput *o)
 		0, 0, 100, 100,
 		parent, controlID, hInstance, NULL);
 	if (listview == NULL)
-		panic("error creating list view");
+		panic(L"error creating list view");
 
 	if (SendMessage(listview, LVM_SETIMAGELIST,
 		LVSIL_NORMAL, (LPARAM) o->largeicons) == (LRESULT) NULL)
-;//		panic("error giving large icon list to list view");
+;//		panic(L"error giving large icon list to list view");
 	iconlists[0] = o->largeicons;
 	iconlists[1] = o->smallicons;
 
@@ -30,32 +30,32 @@ HWND makeListView(HWND parent, HMENU controlID, struct giThreadOutput *o)
 	dummy.iItem = 0;
 	if (SendMessage(listview, LVM_INSERTITEM,
 		(WPARAM) 0, (LPARAM) &dummy) == (LRESULT) -1)
-		panic("error adding dummy item to list view");
+		panic(L"error adding dummy item to list view");
 	// the dummy item has index 0
 
 	if (SendMessage(listview, LVM_ENABLEGROUPVIEW,
 		(WPARAM) TRUE, (LPARAM) NULL) == (LRESULT) -1)
-		panic("error enabling groups in list view");
+		panic(L"error enabling groups in list view");
 
 	size_t i;
 
 	for (i = 0; i < o->nGroups; i++)
 		if (SendMessage(listview, LVM_INSERTGROUP,
 			(WPARAM) -1, (LPARAM) &o->groups[i]) == (LRESULT) -1)
-			panic("error adding group \"%S\" to list view", o->groups[i].pszHeader);
+			panic(L"error adding group \"%s\" to list view", o->groups[i].pszHeader);
 	for (i = 0; i < o->nItems; i++)
 		if (SendMessage(listview, LVM_INSERTITEM,
 			(WPARAM) 0, (LPARAM) &o->items[i]) == (LRESULT) -1)
-			panic("error adding item \"%S\" to list view", o->items[i].pszText);
+			panic(L"error adding item \"%s\" to list view", o->items[i].pszText);
 
 	// and we're done with the dummy item
 	if (SendMessage(listview, LVM_DELETEITEM, 0, 0) == FALSE)
-		panic("error removing dummy item from list view");
+		panic(L"error removing dummy item from list view");
 
 	// now sort the groups in alphabetical order
 	if (SendMessage(listview, LVM_SORTGROUPS,
 		(WPARAM) groupLess, (LPARAM) o) == 0)
-		panic("error sorting icon groups by filename");
+		panic(L"error sorting icon groups by filename");
 
 	// and now some extended styles
 	// the mask (WPARAM) defines which bits of the value (LPARAM) are to be changed
@@ -76,9 +76,9 @@ void resizeListView(HWND listview, HWND parent)
 		RECT r;
 
 		if (GetClientRect(parent, &r) == 0)
-			panic("error getting new list view size");
+			panic(L"error getting new list view size");
 		if (MoveWindow(listview, 0, 0, r.right - r.left, r.bottom - r.top, TRUE) == 0)
-			panic("error resizing list view");
+			panic(L"error resizing list view");
 	}
 }
 
@@ -101,7 +101,7 @@ LRESULT handleListViewRightClick(HWND listview, NMHDR *nmhdr)
 			iconlists[1] = temp;
 			if (SendMessage(listview, LVM_SETIMAGELIST,
 				LVSIL_NORMAL, (LPARAM) iconlists[0]) == (LRESULT) NULL)
-				panic("error swapping list view icon lists");
+				panic(L"error swapping list view icon lists");
 		}
 		return 1;
 	}

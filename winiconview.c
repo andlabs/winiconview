@@ -23,7 +23,7 @@ static void parseArgs(void)
 
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
 	if (argv == NULL)
-		panic("error splitting command line into argc/argv form");
+		panic(L"error splitting command line into argc/argv form");
 	if (argc > 2)
 		goto usage;
 	if (argc == 2) {
@@ -41,7 +41,7 @@ static void parseArgs(void)
 		// the browse for folders dialog uses COM
 		res = CoInitialize(NULL);
 		if (res != S_OK && res != S_FALSE)
-			panic("error initializing COM for browse for folders dialog");
+			panic(L"error initializing COM for browse for folders dialog");
 		ZeroMemory(&bi, sizeof (BROWSEINFO));
 		// TODO dialog properties
 		pidl = SHBrowseForFolder(&bi);
@@ -53,7 +53,7 @@ static void parseArgs(void)
 			path[0] = L'\0';			// TODO I forget why this was needed
 			// TODO resolve shortcuts
 			if (SHGetPathFromIDList(pidl, path) == FALSE)
-				panic("error extracting folder from PIDL from folder dialog");
+				panic(L"error extracting folder from PIDL from folder dialog");
 			dirname = path;
 			CoTaskMemFree(pidl);
 		} else
@@ -80,14 +80,14 @@ static void initSharedWindowsStuff(HINSTANCE winmainhInstance, int winmainnCmdSh
 	icc.dwSize = sizeof (INITCOMMONCONTROLSEX);
 	icc.dwICC = ICC_LISTVIEW_CLASSES | ICC_PROGRESS_CLASS;
 	if (InitCommonControlsEx(&icc) == FALSE)
-		panic("error initializing Common Controls");
+		panic(L"error initializing Common Controls");
 	ncm.cbSize = sizeof (NONCLIENTMETRICS);
 	if (SystemParametersInfo(SPI_GETNONCLIENTMETRICS,
 		sizeof (NONCLIENTMETRICS), &ncm, 0) == 0)
-		panic("error getting non-client metrics for getting control font");
+		panic(L"error getting non-client metrics for getting control font");
 	controlfont = CreateFontIndirect(&ncm.lfMessageFont);
 	if (controlfont == NULL)
-		panic("error getting control font");
+		panic(L"error getting control font");
 }
 
 void setControlFont(HWND hwnd)
@@ -101,7 +101,7 @@ HFONT selectControlFont(HDC dc)
 
 	prev = (HFONT) SelectObject(dc, controlfont);
 	if (prev == NULL)
-		panic("error selecting control font into DC");
+		panic(L"error selecting control font into DC");
 	return prev;
 }
 
@@ -121,7 +121,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 
 		gmret = GetMessage(&msg, NULL, 0, 0);
 		if (gmret == -1)
-			panic("error getting message");
+			panic(L"error getting message");
 		if (gmret == 0)
 			break;
 		TranslateMessage(&msg);

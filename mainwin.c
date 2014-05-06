@@ -26,15 +26,15 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 
 	dc = GetWindowDC(hwnd);
 	if (dc == NULL)
-		panic("error getting window DC for laying out progress controls");
+		panic(L"error getting window DC for laying out progress controls");
 	prevfont = selectControlFont(dc);
 	if (GetTextMetrics(dc, &tm) == 0)
-		panic("error getting text metrics from DC for laying out progress controls");
+		panic(L"error getting text metrics from DC for laying out progress controls");
 	baseY = tm.tmHeight;
 	// via http://support.microsoft.com/kb/125681
 	if (GetTextExtentPoint32(dc, L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
 		52, &extents) == 0)
-		panic("error getting baseY value from DC for laying out progress controls");
+		panic(L"error getting baseX value from DC for laying out progress controls");
 	baseX = (extents.cx / 26 + 1) / 2;
 	// don't close the DC yet; we still need it
 
@@ -66,11 +66,11 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 
 	// first, the "please wait" label
 	if (GetTextExtentPoint32(dc, data->labelText, wcslen(data->labelText), &extents) == 0)
-		panic("error getting width of \"please wait\" label for laying out progress controls");
+		panic(L"error getting width of \"please wait\" label for laying out progress controls");
 	cwid = extents.cx;
 	cht = FROMDLGUNITSY(labelHeight);
 	if (MoveWindow(data->label, cx, cy, cwid, cht, TRUE) == 0)
-		panic("error laying out \"please wait\" label for laying out progress controls");
+		panic(L"error laying out \"please wait\" label for laying out progress controls");
 	cy += cht;
 
 	width = (cx + cwid);		// initial window width
@@ -80,7 +80,7 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 	cwid = FROMDLGUNITSX(pbarWidth);
 	cht = FROMDLGUNITSY(pbarHeight);
 	if (MoveWindow(data->progressbar, cx, cy, cwid, cht, TRUE) == 0)
-		panic("error laying out progressbar for laying out progress controls");
+		panic(L"error laying out progressbar for laying out progress controls");
 	cy += cht;
 
 	if (width < (cx + cwid))						// if the progress bar is longer, overrule the above
@@ -102,15 +102,15 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 		GetWindowLongPtr(hwnd, GWL_STYLE),
 		FALSE,			// no menu
 		GetWindowLongPtr(hwnd, GWL_EXSTYLE)) == 0)
-		panic("error getting progress window size");
+		panic(L"error getting progress window size");
 	if (MoveWindow(hwnd, data->defaultWindowRect.left, data->defaultWindowRect.top,
 		client.right - client.left, client.bottom - client.top, TRUE) == 0)
-		panic("error resizing the window to the progress window size");
+		panic(L"error resizing the window to the progress window size");
 
 	if (SelectObject(dc, prevfont) == NULL)
-		panic("error restoring previous DC font for laying out progress controls");
+		panic(L"error restoring previous DC font for laying out progress controls");
 	if (ReleaseDC(hwnd, dc) == 0)
-		panic("error releasing window DC for laying out progress controls");
+		panic(L"error releasing window DC for laying out progress controls");
 }
 
 static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
@@ -125,7 +125,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	if (data == NULL) {
 		data = (struct mainwinData *) malloc(sizeof (struct mainwinData));
 		if (data == NULL)
-			panic("error allocating main window data structure");
+			panic(L"error allocating main window data structure");
 		ZeroMemory(data, sizeof (struct mainwinData));
 		data->currentCursor = arrowCursor;
 		SetWindowLongPtr(hwnd, GWL_USERDATA, (LONG_PTR) data);
@@ -137,18 +137,18 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		data->dirname = cs->lpCreateParams;
 		threadInput = (struct giThreadInput *) malloc(sizeof (struct giThreadInput));
 		if (threadInput == NULL)
-			panic("error allocating getIcons() thread data structure for \"%S\"", data->dirname);
+			panic(L"error allocating getIcons() thread data structure for \"%s\"", data->dirname);
 		threadInput->mainwin = hwnd;
 		threadInput->dirname = data->dirname;
 		if (CreateThread(NULL, 0, getIcons, threadInput, 0, NULL) == NULL)
-			panic("error creating worker thread to get icons");
+			panic(L"error creating worker thread to get icons");
 		// TODO free threadData in the thread
 		// let's defer this to DefWindowProc(); just to be safe, instead of just returning TRUE (TODO)
 		// I THINK that's what the oldnewthing link above does anyway
 		return DefWindowProc(hwnd, msg, wparam, lparam);
 	case msgBegin:
 		if (GetWindowRect(hwnd, &data->defaultWindowRect) == 0)
-			panic("error saving default window rect");
+			panic(L"error saving default window rect");
 		data->currentCursor = waitCursor;
 		data->labelText = L"Gathering icons. Please wait.";
 		data->label = CreateWindowEx(0,
@@ -157,7 +157,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			20, 20, 200, 20,
 			hwnd, NULL, hInstance, NULL);
 		if (data->label == NULL)
-			panic("error making \"please wait\" label");
+			panic(L"error making \"please wait\" label");
 		setControlFont(data->label);
 		data->progressbar = CreateWindowEx(0,
 			PROGRESS_CLASS, L"",
@@ -165,7 +165,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			20, 45, 200, 40,
 			hwnd, NULL, hInstance, NULL);
 		if (data->progressbar == NULL)
-			panic("error making progressbar");
+			panic(L"error making progressbar");
 		SendMessage(data->progressbar, PBM_SETRANGE32,
 			0, lparam);
 		SendMessage(data->progressbar, PBM_SETSTEP, 1, 0);
@@ -173,7 +173,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		// and now that everything's ready we can FINALLY show the main window
 		ShowWindow(hwnd, nCmdShow);
 		if (UpdateWindow(hwnd) == 0)
-			panic("UpdateWindow() failed in first show");
+			panic(L"UpdateWindow() failed in first show");
 		return 0;
 	case msgStep:
 		SendMessage(data->progressbar, PBM_STEPIT, 0, 0);
@@ -182,9 +182,9 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		// kill redraw because this is a heavy operation
 		SendMessage(hwnd, WM_SETREDRAW, (WPARAM) FALSE, 0);
 		if (DestroyWindow(data->label) == 0)
-			panic("error removing \"please wait\" label");
+			panic(L"error removing \"please wait\" label");
 		if (DestroyWindow(data->progressbar) == 0)
-			panic("error removing progressbar");
+			panic(L"error removing progressbar");
 		data->listview = makeListView(hwnd, (HMENU) ID_LISTVIEW,
 			(struct giThreadOutput *) lparam);
 		data->currentCursor = arrowCursor;		// TODO move to end and make atomic
@@ -192,12 +192,12 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			data->defaultWindowRect.right - data->defaultWindowRect.left,
 			data->defaultWindowRect.bottom - data->defaultWindowRect.top,
 			TRUE) == 0)
-			panic("error restoring the original window rect");
+			panic(L"error restoring the original window rect");
 		resizeListView(data->listview, hwnd);
 		SendMessage(hwnd, WM_SETREDRAW, (WPARAM) TRUE, 0);
 		RedrawWindow(hwnd, NULL, NULL, RDW_ERASE | RDW_FRAME | RDW_INVALIDATE | RDW_ALLCHILDREN);		// MSDN says to
 		if (SetFocus(data->listview) == NULL)
-			panic("error setting focus to the list view");
+			panic(L"error setting focus to the list view");
 		return 0;
 	case WM_SETCURSOR:
 		SetCursor(data->currentCursor);
@@ -216,7 +216,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	default:
 		return DefWindowProc(hwnd, msg, wparam, lparam);
 	}
-	panic("oops: message %ud does not return anything; bug in wndproc()", msg);
+	panic(L"oops: message %ud does not return anything; bug in wndproc()", msg);
 }
 
 void registerMainWindowClass(void)
@@ -225,13 +225,13 @@ void registerMainWindowClass(void)
 
 	hDefaultIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_APPLICATION));
 	if (hDefaultIcon == NULL)
-		panic("error getting default window class icon");
+		panic(L"error getting default window class icon");
 	arrowCursor = LoadCursor(NULL, IDC_ARROW);
 	if (arrowCursor == NULL)
-		panic("error getting arrow cursor");
+		panic(L"error getting arrow cursor");
 	waitCursor = LoadCursor(NULL, IDC_WAIT);
 	if (waitCursor == NULL)
-		panic("error getting wait cursor");
+		panic(L"error getting wait cursor");
 	ZeroMemory(&cls, sizeof (WNDCLASS));
 	cls.lpszClassName = L"mainwin";
 	cls.lpfnWndProc = wndproc;
@@ -240,7 +240,7 @@ void registerMainWindowClass(void)
 	cls.hCursor = arrowCursor;
 	cls.hbrBackground = (HBRUSH) (COLOR_BTNFACE + 1);
 	if (RegisterClass(&cls) == 0)
-		panic("error registering window class");
+		panic(L"error registering window class");
 }
 
 HWND makeMainWindow(TCHAR *dirname)
@@ -254,6 +254,6 @@ HWND makeMainWindow(TCHAR *dirname)
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL, NULL, hInstance, dirname);
 	if (mainwin == NULL)
-		panic("opening main window failed");
+		panic(L"opening main window failed");
 	return mainwin;
 }

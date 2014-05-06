@@ -27,7 +27,9 @@ void registerMainWindowClass(void);
 HWND makeMainWindow(TCHAR *);
 
 // util.c
-void panic(char *fmt, ...);
+void panic(TCHAR *fmt, ...);
+TCHAR *ourawsprintf(TCHAR *fmt, ...);
+TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg);
 TCHAR *toWideString(char *what);
 void ourWow64DisableWow64FsRedirection(PVOID *);
 void ourWow64RevertWow64FsRedirection(PVOID);

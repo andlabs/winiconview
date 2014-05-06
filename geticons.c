@@ -17,7 +17,7 @@ static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 		d->nGroupsAlloc += 200;		// will handle first run too
 		d->o->groups = (LVGROUP *) realloc(d->o->groups, d->nGroupsAlloc * sizeof (LVGROUP));
 		if (d->o->groups == NULL)
-			panic("error allocating room for list view groups");
+			panic(L"error allocating room for list view groups");
 	}
 	g = &d->o->groups[d->o->nGroups++];
 	ZeroMemory(g, sizeof (LVGROUP));
@@ -25,7 +25,7 @@ static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 	g->mask = LVGF_HEADER | LVGF_GROUPID;
 	g->pszHeader = _wcsdup(name);
 	if (g->pszHeader == NULL)
-		panic("error making copy of filename %S for grouping/sorting", name);
+		panic(L"error making copy of filename %s for grouping/sorting", name);
 	// for some reason the group ID and the index returned by LVM_INSERTGROUP are separate concepts... so we have to provide an ID.
 	// (thanks to roxfan in irc.efnet.net/#winprog for confirming)
 	g->iGroupId = id;
@@ -35,7 +35,7 @@ static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 		d->o->ngroupnames = id + 1;
 	d->o->groupnames = (TCHAR **) realloc(d->o->groupnames, d->o->ngroupnames * sizeof (TCHAR *));
 	if (d->o->groupnames == NULL)
-		panic("error expanding groupnames list to fit new group name \"%s\"", name);
+		panic(L"error expanding groupnames list to fit new group name \"%s\"", name);
 	d->o->groupnames[id] = g->pszHeader;
 }
 
@@ -47,9 +47,9 @@ INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 	struct giThreadOutput *o = (struct giThreadOutput *) data;
 
 	if (gn1 < 0 || gn1 >= o->ngroupnames)
-		panic("group ID %d out of range in compare (max %d)", gn1, o->ngroupnames - 1);
+		panic(L"group ID %d out of range in compare (max %d)", gn1, o->ngroupnames - 1);
 	if (gn2 < 0 || gn2 >= o->ngroupnames)
-		panic("group ID %d out of range in compare (max %d)", gn2, o->ngroupnames - 1);
+		panic(L"group ID %d out of range in compare (max %d)", gn2, o->ngroupnames - 1);
 	// ignore case; these are filenames
 	// Microsoft says to use the _-prefixed functions (http://msdn.microsoft.com/en-us/library/ms235365.aspx); I wonder why these would be in the C++ standard... (TODO)
 	return _wcsicmp(o->groupnames[gn1], o->groupnames[gn2]);
@@ -71,7 +71,7 @@ DWORD WINAPI getIcons(LPVOID vinput)
 	ZeroMemory(&d, sizeof (struct giThreadData));
 	d.o = (struct giThreadOutput *) malloc(sizeof (struct giThreadOutput));
 	if (d.o == NULL)
-		panic("error allocating getIcons() thread output area");
+		panic(L"error allocating getIcons() thread output area");
 	ZeroMemory(d.o, sizeof (struct giThreadOutput));
 
 	PVOID wow64token;
@@ -81,10 +81,10 @@ DWORD WINAPI getIcons(LPVOID vinput)
 	TCHAR finddir[MAX_PATH + 1];
 
 	if (PathCombine(finddir, dirname, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
-		panic("error producing version of \"%S\" for FindFirstFile()", dirname);
+		panic(L"error producing version of \"%s\" for FindFirstFile()", dirname);
 
 	if (PostMessage(mainwin, msgBegin, 0, filecount(dirname, finddir)) == 0)
-		panic("error notifying main window that processing has begun");
+		panic(L"error notifying main window that processing has begun");
 
 	int itemid = 1;		// 0 is the dummy item
 
@@ -92,11 +92,11 @@ DWORD WINAPI getIcons(LPVOID vinput)
 	d.o->largeicons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
 		ILC_COLOR32 | ILC_MASK, 100, 100);
 	if (d.o->largeicons == NULL)
-		panic("error creating large icon list for list view");
+		panic(L"error creating large icon list for list view");
 	d.o->smallicons = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
 		ILC_COLOR32 | ILC_MASK, 100, 100);
 	if (d.o->smallicons == NULL)
-		panic("error creating small icon list for list view");
+		panic(L"error creating small icon list for list view");
 
 	HANDLE dir;
 	WIN32_FIND_DATA entry;
@@ -114,16 +114,16 @@ DWORD WINAPI getIcons(LPVOID vinput)
 			exit(0);
 		}
 		SetLastError(e);		// for panic()
-		panic("error opening \"%S\"", dirname);
+		panic(L"error opening \"%s\"", dirname);
 	}
 	for (;;) {
 		TCHAR filename[MAX_PATH + 1];
 
 		if (PostMessage(mainwin, msgStep, 0, 0) == 0)
-			panic("error notifying main window that processing has moved to the next file");
+			panic(L"error notifying main window that processing has moved to the next file");
 
 		if (PathCombine(filename, dirname, entry.cFileName) == NULL)
-			panic("error allocating combined filename \"%S\\%S\"",
+			panic(L"error allocating combined filename \"%s\\%s\"",
 				dirname, entry.cFileName);
 
 		UINT nIcons;
@@ -138,17 +138,17 @@ DWORD WINAPI getIcons(LPVOID vinput)
 
 			large = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (large == NULL)
-				panic("error allocating array of large icon handles for \"%S\"", filename);
+				panic(L"error allocating array of large icon handles for \"%s\"", filename);
 			small = (HICON *) malloc(nIcons * sizeof (HICON));
 			if (small == NULL)
-				panic("error allocating array of small icon handles for \"%S\"", filename);
+				panic(L"error allocating array of small icon handles for \"%s\"", filename);
 
 			while (nStart < nIcons) {
 				nlarge = ExtractIconEx(filename, nStart, large, NULL, nIcons);
 				nsmall = ExtractIconEx(filename, nStart, NULL, small, nIcons);
 				// don't check returns from ExtractIconEx() here; a 0 return indicates an invalid icon
 				if (nlarge != nsmall)
-					panic("internal inconsisitency reading icons from \"%S\": differing number of large and small icons read (large: %u, small: %u)", filename, nlarge, nsmall);
+					panic(L"internal inconsisitency reading icons from \"%s\": differing number of large and small icons read (large: %u, small: %u)", filename, nlarge, nsmall);
 				if (nlarge == 0)	{		// no icon; mark this as invalid
 					addInvalidIcon(&d, groupid, &itemid, filename);
 					nStart++;
@@ -171,16 +171,16 @@ DWORD WINAPI getIcons(LPVOID vinput)
 			if (e == ERROR_NO_MORE_FILES)		// we're done
 				break;
 			SetLastError(e);		// for panic()
-			panic("error getting next filename in \"%S\"", dirname);
+			panic(L"error getting next filename in \"%s\"", dirname);
 		}
 	}
 	if (FindClose(dir) == 0)
-		panic("error closing \"%S\"", dirname);
+		panic(L"error closing \"%s\"", dirname);
 
 	ourWow64RevertWow64FsRedirection(wow64token);
 
 	if (PostMessage(mainwin, msgEnd, 0, (LPARAM) d.o) == 0)
-		panic("error notifying main window that processing has ended");
+		panic(L"error notifying main window that processing has ended");
 	return 0;
 }
 
@@ -190,7 +190,7 @@ static LVITEM *addItem(struct giThreadData *d)
 		d->nItemsAlloc += 200;			// will handle first run too
 		d->o->items = (LVITEM *) realloc(d->o->items, d->nItemsAlloc * sizeof (LVITEM));
 		if (d->o->items == NULL)
-			panic("error allocating room for list view items");
+			panic(L"error allocating room for list view items");
 	}
 	return &d->o->items[d->o->nItems++];
 }
@@ -204,14 +204,14 @@ static void addIcons(struct giThreadData *d, UINT nIcons, HICON *large, HICON *s
 	for (i = 0; i < nIcons; i++) {
 		index = ImageList_AddIcon(d->o->largeicons, large[i]);
 		if (index == -1)
-			panic("error adding icon %u from \"%S\" to large icon list", i, filename);
+			panic(L"error adding icon %u from \"%s\" to large icon list", i, filename);
 		DestroyIcon(large[i]);		// the image list seems to keep a copy of the icon; destroy the original to avoid running up against memory limits (TODO verify against documentation; it confused me at first)
 		i2 = ImageList_AddIcon(d->o->smallicons, small[i]);
 		if (i2 == -1)
-			panic("error adding icon %u from \"%S\" to small icon list (%p)", i, filename, small[i]);
+			panic(L"error adding icon %u from \"%s\" to small icon list (%p)", i, filename, small[i]);
 		DestroyIcon(small[i]);
 		if (index != i2)
-			panic("internal inconsistency: indices of icon %u from \"%S\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
+			panic(L"internal inconsistency: indices of icon %u from \"%s\" in image lists do not match (large %d, small %d)", i, filename, index, i2);
 
 		item = addItem(d);
 		ZeroMemory(item, sizeof (LVITEM));
@@ -257,7 +257,7 @@ static LPARAM filecount(TCHAR *dirname, TCHAR *finddir)
 		if (e == ERROR_FILE_NOT_FOUND)		// no files
 			return 0;
 		SetLastError(e);						// for panic()
-		panic("error opening \"%S\" for counting files", dirname);
+		panic(L"error opening \"%s\" for counting files", dirname);
 	}
 	for (;;) {
 		count++;
@@ -268,10 +268,10 @@ static LPARAM filecount(TCHAR *dirname, TCHAR *finddir)
 			if (e == ERROR_NO_MORE_FILES)		// we're done
 				break;
 			SetLastError(e);						// for panic()
-			panic("error getting next filename in \"%S\" for counting files", dirname);
+			panic(L"error getting next filename in \"%s\" for counting files", dirname);
 		}
 	}
 	if (FindClose(dir) == 0)
-		panic("error closing \"%S\" for counting files", dirname);
+		panic(L"error closing \"%s\" for counting files", dirname);
 	return count;
 }

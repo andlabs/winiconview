@@ -31,6 +31,9 @@ TODO
 	- we don't free the LVITEM set
 	- large and small in `getIcons()` don't need to be repeatedly allocated and freed; they can be allocated once, grown as needed, and then freed at the end
 - do I need to apply `controlfont` to the list view? it doesn't look like I do...
+- add errno to panic()
+	- get rid of the stray newline at the end of the GetLastError() message
+	- apply the above two changes to the scratch Windows program in misctestprogs
 
 NICE THINGS TO HAVE
 - get the resource ID for each icon and print that

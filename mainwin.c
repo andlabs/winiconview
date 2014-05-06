@@ -39,7 +39,6 @@ static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
 	// don't close the DC yet; we still need it
 
 	// via http://msdn.microsoft.com/en-us/library/windows/desktop/aa511279.aspx
-	// TODO follow spacing rules here too
 	enum {
 		labelHeight = 8,
 		pbarWidth = 237,

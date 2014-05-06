@@ -179,6 +179,18 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		SendMessage(data->progressbar, PBM_STEPIT, 0, 0);
 		return 0;
 	case msgEnd:
+		if (((struct giThreadOutput *) lparam)->nItems == 0) {		// no icons
+			TCHAR *msg;
+
+			msg = ourawsprintf(L"\"%s\" contains no icons.", data->dirname);
+			if (msg == NULL)
+				panic(L"error preparing the string that reports that \"%S\" contains no icons", data->dirname);
+			if (MessageBox(hwnd, msg, PROGNAME,
+				MB_OK | MB_ICONINFORMATION | MB_SYSTEMMODAL) == 0)
+				panic(L"error reporting that \"%S\" contains no icons", data->dirname);
+			PostQuitMessage(0);
+			return 0;
+		}
 		// kill redraw because this is a heavy operation
 		SendMessage(hwnd, WM_SETREDRAW, (WPARAM) FALSE, 0);
 		if (DestroyWindow(data->label) == 0)

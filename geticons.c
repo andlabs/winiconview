@@ -138,19 +138,8 @@ DWORD WINAPI getIcons(LPVOID vinput)
 	int groupid = 0;
 
 	dir = FindFirstFile(finddir, &entry);
-	if (dir == INVALID_HANDLE_VALUE) {
-		DWORD e;
-
-		e = GetLastError();
-		if (e == ERROR_FILE_NOT_FOUND) {
-			// TODO report to user; do it on the main window instead
-			printf("no files\n");
-			// TODO don't quit
-			exit(0);
-		}
-		SetLastError(e);		// for panic()
+	if (dir == INVALID_HANDLE_VALUE)			// don't handle file not found here; if that comes up then something bad happened between the file count and this
 		panic(L"error opening \"%s\"", dirname);
-	}
 	for (;;) {
 		TCHAR filename[MAX_PATH + 1];
 

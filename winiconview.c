@@ -32,8 +32,9 @@ static void parseArgs(void)
 		HRESULT res;
 		BROWSEINFO bi;
 		PIDLIST_ABSOLUTE pidl;
+		PVOID wow64token;
 
-		// TODO disable WOW64 redirection here too
+		ourWow64DisableWow64FsRedirection(&wow64token);
 		// the browse for folders dialog uses COM
 		res = CoInitialize(NULL);
 		if (res != S_OK && res != S_FALSE)
@@ -55,6 +56,7 @@ static void parseArgs(void)
 		} else
 			printf("user aborted selection\n");
 		CoUninitialize();
+		ourWow64RevertWow64FsRedirection(wow64token);
 		if (dirname == NULL)		// don't quit if a directory was selected
 			exit(0);
 	}

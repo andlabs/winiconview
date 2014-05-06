@@ -252,7 +252,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	default:
 		return DefWindowProc(hwnd, msg, wparam, lparam);
 	}
-	panic(L"oops: message %ud does not return anything; bug in wndproc()", msg);
+	panic(L"oops: message %u does not return anything; bug in wndproc()", msg);
 }
 
 void registerMainWindowClass(void)
@@ -290,6 +290,6 @@ HWND makeMainWindow(TCHAR *dirname)
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		NULL, NULL, hInstance, dirname);
 	if (mainwin == NULL)
-		panic(L"opening main window failed");
+		panic(L"error creating main window");
 	return mainwin;
 }

@@ -34,6 +34,10 @@ TODO
 - add errno to panic()
 	- get rid of the stray newline at the end of the GetLastError() message
 	- apply the above two changes to the scratch Windows program in misctestprogs
+- switch to embedding the manifest either as a resource (via FraGag) or internally (like package ui does)
+- FraGag points out that the WOW64 redirection can screw with COM, ,which the Browse for Folders dialog uses...
+- add /debug to the nmake Makefile's /link path? and is there another way to export type information too? or to use COFF symbol tables?
+- change tthe GNUmakefile to also work with MinGW on Windows
 
 NICE THINGS TO HAVE
 - get the resource ID for each icon and print that

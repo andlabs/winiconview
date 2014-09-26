@@ -4,6 +4,9 @@
 // borrows code from the scratch GTK+ program (16-17 april 2014) and from code written 31 march 2014 and 11-12 april 2014
 #include "winiconview.h"
 
+// TODO prune the DLLs
+// #qo LDFLAGS: -luser32 -lkernel32 -lcomctl32 -lcomdlg32 -lgdi32 -lmsimg32 -lshell32 -ladvapi32 -lole32 -lshlwapi
+
 HMODULE hInstance;
 int nCmdShow;
 

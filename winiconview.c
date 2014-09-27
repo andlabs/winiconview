@@ -5,7 +5,7 @@
 #include "winiconview.h"
 
 // TODO prune the DLLs
-// #qo LDFLAGS: -luser32 -lkernel32 -lcomctl32 -lcomdlg32 -lgdi32 -lmsimg32 -lshell32 -ladvapi32 -lole32 -lshlwapi
+// #qo LIBS: user32 kernel32 comctl32 comdlg32 gdi32 msimg32 shell32 advapi32 ole32 shlwapi
 
 HMODULE hInstance;
 int nCmdShow;

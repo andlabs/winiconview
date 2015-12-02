@@ -43,3 +43,5 @@ NICE THINGS TO HAVE
 - get the resource ID for each icon and print that
 - type in the list view to navigate groups instead of icon labels
 - long-filename aware in general; there's a TODO comment about it but still
+- this might be the cause of our dummy item nonsense http://blogs.msdn.com/b/oldnewthing/archive/2003/12/12/56061.aspx#56064
+	- but we always ZeroMemory() so huh???

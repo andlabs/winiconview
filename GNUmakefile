@@ -67,3 +67,7 @@ $(OBJDIR)/%.rc.o: %.rc $(HFILES) | $(OBJDIR)
 
 $(OBJDIR):
 	@mkdir $@
+
+clean:
+	rm -rf $(OBJDIR) $(OUT) $(OUT:%.exe=%.pdb)
+.PHONY: clean

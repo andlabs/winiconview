@@ -6,9 +6,6 @@
 
 // TODO prune the DLLs
 
-HINSTANCE hInstance;
-int nCmdShow;
-
 static HFONT controlfont;
 
 static WCHAR *dirname = NULL;
@@ -118,16 +115,4 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 
 	mainwin = makeMainWindow(dirname);
 
-	for (;;) {
-		BOOL gmret;
-
-		gmret = GetMessage(&msg, NULL, 0, 0);
-		if (gmret == -1)
-			panic(L"error getting message");
-		if (gmret == 0)
-			break;
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
-	}
-	return 0;
 }

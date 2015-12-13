@@ -7,7 +7,7 @@
 // TODO prune the DLLs
 // #qo LIBS: user32 kernel32 comctl32 comdlg32 gdi32 msimg32 shell32 advapi32 ole32 shlwapi
 
-HMODULE hInstance;
+HINSTANCE hInstance;
 int nCmdShow;
 
 static HFONT controlfont;

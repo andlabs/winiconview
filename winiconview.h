@@ -40,8 +40,6 @@ HWND makeMainWindow(TCHAR *);
 void panic(TCHAR *fmt, ...);
 TCHAR *ourawsprintf(TCHAR *fmt, ...);
 TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg);
-void ourWow64DisableWow64FsRedirection(PVOID *);
-void ourWow64RevertWow64FsRedirection(PVOID);
 
 // geticons.c
 enum {

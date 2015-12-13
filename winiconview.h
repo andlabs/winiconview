@@ -34,12 +34,12 @@ HFONT selectControlFont(HDC);
 
 // mainwin.c
 void registerMainWindowClass(void);
-HWND makeMainWindow(TCHAR *);
+HWND makeMainWindow(WCHAR *);
 
 // util.c
-void panic(TCHAR *fmt, ...);
-TCHAR *ourawsprintf(TCHAR *fmt, ...);
-TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg);
+void panic(WCHAR *fmt, ...);
+WCHAR *ourawsprintf(WCHAR *fmt, ...);
+WCHAR *ourvawsprintf(WCHAR *fmt, va_list arg);
 
 // geticons.c
 enum {
@@ -50,7 +50,7 @@ enum {
 
 struct giThreadInput {
 	HWND mainwin;
-	TCHAR *dirname;
+	WCHAR *dirname;
 };
 
 struct giThreadOutput {
@@ -60,7 +60,7 @@ struct giThreadOutput {
 	size_t nGroups;
 	LVITEM *items;
 	size_t nItems;
-	TCHAR **groupnames;		// to store group names for sorting
+	WCHAR **groupnames;		// to store group names for sorting
 	int ngroupnames;
 };
 

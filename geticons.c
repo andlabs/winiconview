@@ -40,7 +40,7 @@ void initGetIcons(void)
 	systemDependentGroupFlags = LVGS_COLLAPSIBLE;
 }
 
-static void addGroup(struct giThreadData *d, TCHAR *name, int id)
+static void addGroup(struct giThreadData *d, WCHAR *name, int id)
 {
 	LVGROUP *g;
 
@@ -68,7 +68,7 @@ static void addGroup(struct giThreadData *d, TCHAR *name, int id)
 	// save the name so we can sort
 	if (d->o->ngroupnames < id + 1)
 		d->o->ngroupnames = id + 1;
-	d->o->groupnames = (TCHAR **) realloc(d->o->groupnames, d->o->ngroupnames * sizeof (TCHAR *));
+	d->o->groupnames = (WCHAR **) realloc(d->o->groupnames, d->o->ngroupnames * sizeof (WCHAR *));
 	if (d->o->groupnames == NULL)
 		panic(L"error expanding groupnames list to fit new group name \"%s\"", name);
 	d->o->groupnames[id] = g->pszHeader;
@@ -91,15 +91,15 @@ INT CALLBACK groupLess(INT gn1, INT gn2, VOID *data)
 	// why not just get the group info each time? because we can't get the header length later, at least not as far as I know
 }
 
-static LPARAM filecount(TCHAR *, TCHAR *);
-static void addIcons(struct giThreadData *, UINT, HICON *, HICON *, int, int *, TCHAR *);
-static void addInvalidIcon(struct giThreadData *, int, int *, TCHAR *);
+static LPARAM filecount(WCHAR *, WCHAR *);
+static void addIcons(struct giThreadData *, UINT, HICON *, HICON *, int, int *, WCHAR *);
+static void addInvalidIcon(struct giThreadData *, int, int *, WCHAR *);
 
 DWORD WINAPI getIcons(LPVOID vinput)
 {
 	struct giThreadInput *input = (struct giThreadInput *) vinput;
 	HWND mainwin = input->mainwin;
-	TCHAR *dirname = input->dirname;
+	WCHAR *dirname = input->dirname;
 
 	free(input);		// we allocated it with malloc() back in wndproc() but now we're done with it; wndproc() forgets about it so free it here
 
@@ -115,7 +115,7 @@ DWORD WINAPI getIcons(LPVOID vinput)
 
 	ourWow64DisableWow64FsRedirection(&wow64token);
 
-	TCHAR finddir[MAX_PATH + 1];
+	WCHAR finddir[MAX_PATH + 1];
 
 	if (PathCombine(finddir, dirname, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
 		panic(L"error producing version of \"%s\" for FindFirstFile()", dirname);
@@ -143,7 +143,7 @@ DWORD WINAPI getIcons(LPVOID vinput)
 	if (dir == INVALID_HANDLE_VALUE)			// don't handle file not found here; if that comes up then something bad happened between the file count and this
 		panic(L"error opening \"%s\"", dirname);
 	for (;;) {
-		TCHAR filename[MAX_PATH + 1];
+		WCHAR filename[MAX_PATH + 1];
 
 		if (PostMessage(mainwin, msgStep, 0, 0) == 0)
 			panic(L"error notifying main window that processing has moved to the next file");
@@ -221,7 +221,7 @@ static LVITEM *addItem(struct giThreadData *d)
 	return &d->o->items[d->o->nItems++];
 }
 
-static void addIcons(struct giThreadData *d, UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid, TCHAR *filename)
+static void addIcons(struct giThreadData *d, UINT nIcons, HICON *large, HICON *small, int groupid, int *itemid, WCHAR *filename)
 {
 	UINT i;
 	int index, i2;
@@ -252,7 +252,7 @@ static void addIcons(struct giThreadData *d, UINT nIcons, HICON *large, HICON *s
 	}
 }
 
-static void addInvalidIcon(struct giThreadData *d, int groupid, int *itemid, TCHAR *filename)
+static void addInvalidIcon(struct giThreadData *d, int groupid, int *itemid, WCHAR *filename)
 {
 	LVITEM *item;
 
@@ -267,7 +267,7 @@ static void addInvalidIcon(struct giThreadData *d, int groupid, int *itemid, TCH
 	item->iItem = (*itemid)++;
 }
 
-static LPARAM filecount(TCHAR *dirname, TCHAR *finddir)
+static LPARAM filecount(WCHAR *dirname, WCHAR *finddir)
 {
 	HANDLE dir;
 	WIN32_FIND_DATA entry;

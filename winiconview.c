@@ -12,9 +12,9 @@ int nCmdShow;
 
 static HFONT controlfont;
 
-static TCHAR *dirname = NULL;
+static WCHAR *dirname = NULL;
 
-static TCHAR *folderDialogHelpText =
+static WCHAR *folderDialogHelpText =
 	L"Choose a folder from the list below to see its icons. "
 	PROGNAME L" won't enter subfolders; it'll only scan files in the chosen folder.";
 
@@ -22,7 +22,7 @@ static void parseArgs(void)
 {
 	int usageret = EXIT_FAILURE;
 	int argc;
-	TCHAR **argv;
+	WCHAR **argv;
 
 	argv = CommandLineToArgvW(GetCommandLine(), &argc);
 	if (argv == NULL)
@@ -51,7 +51,7 @@ static void parseArgs(void)
 		if (pidl != NULL) {
 			// THIS WILL CUT OFF. BIG TODO.
 			// static so we can save it without doing /another/ string copy
-			static TCHAR path[(4 * MAX_PATH) + 1];
+			static WCHAR path[(4 * MAX_PATH) + 1];
 
 			path[0] = L'\0';			// TODO I forget why this was needed
 			// TODO resolve shortcuts

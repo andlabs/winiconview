@@ -11,9 +11,9 @@ struct mainwinData {
 	HWND label;
 	HWND progressbar;
 	HWND listview;
-	TCHAR *dirname;
+	WCHAR *dirname;
 	RECT defaultWindowRect;
-	TCHAR *labelText;
+	WCHAR *labelText;
 };
 
 static void properlyLayOutProgressWindow(HWND hwnd, struct mainwinData *data)
@@ -155,7 +155,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 	switch (msg) {
 	case WM_NCCREATE:
 		cs = (CREATESTRUCT *) lparam;
-		data->dirname = (TCHAR *) cs->lpCreateParams;
+		data->dirname = (WCHAR *) cs->lpCreateParams;
 		threadInput = (struct giThreadInput *) malloc(sizeof (struct giThreadInput));
 		if (threadInput == NULL)
 			panic(L"error allocating getIcons() thread data structure for \"%s\"", data->dirname);
@@ -202,7 +202,7 @@ static LRESULT CALLBACK wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 		return 0;
 	case msgEnd:
 		if (((struct giThreadOutput *) lparam)->nItems == 0) {		// no icons
-			TCHAR *msg;
+			WCHAR *msg;
 
 			msg = ourawsprintf(L"\"%s\" contains no icons.", data->dirname);
 			if (msg == NULL)
@@ -279,7 +279,7 @@ void registerMainWindowClass(void)
 		panic(L"error registering window class");
 }
 
-HWND makeMainWindow(TCHAR *dirname)
+HWND makeMainWindow(WCHAR *dirname)
 {
 	HWND mainwin;
 

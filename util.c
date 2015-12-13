@@ -1,11 +1,11 @@
 // 4 may 2014
 #include "winiconview.h"
 
-void panic(TCHAR *fmt, ...)
+void panic(WCHAR *fmt, ...)
 {
-	TCHAR *msg;
-	TCHAR *lerrmsg;
-	TCHAR *fullmsg;
+	WCHAR *msg;
+	WCHAR *lerrmsg;
+	WCHAR *fullmsg;
 	va_list arg;
 	DWORD lasterr;
 	DWORD lerrsuccess;
@@ -41,9 +41,9 @@ void panic(TCHAR *fmt, ...)
 	exit(1);
 }
 
-TCHAR *ourawsprintf(TCHAR *fmt, ...)
+WCHAR *ourawsprintf(WCHAR *fmt, ...)
 {
-	TCHAR *out;
+	WCHAR *out;
 	va_list arg;
 
 	va_start(arg, fmt);
@@ -58,10 +58,10 @@ TCHAR *ourawsprintf(TCHAR *fmt, ...)
 #endif
 
 // don't call panic() here because panic() calls this!
-TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg)
+WCHAR *ourvawsprintf(WCHAR *fmt, va_list arg)
 {
 	int n;
-	TCHAR *out;
+	WCHAR *out;
 	va_list carg;
 
 	va_copy(carg, arg);
@@ -69,7 +69,7 @@ TCHAR *ourvawsprintf(TCHAR *fmt, va_list arg)
 	va_end(carg);
 	if (n == -1)
 		return NULL;
-	out = (TCHAR *) malloc((n + 1) * sizeof (TCHAR));
+	out = (WCHAR *) malloc((n + 1) * sizeof (WCHAR));
 	if (out == NULL)
 		return NULL;
 	// BIG TODO: if Application Verifier is patrolling this process, the _vsnwprintf() call will CRASH and I have no idea why :S

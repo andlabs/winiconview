@@ -7,8 +7,27 @@ HWND mainwin = NULL;
 #define mainwinClass L"winiconview_mainwin"
 
 struct mainwinData {
-	int dummy;
+	HWND treeview;
+	HWND listview;
 };
+
+static void relayoutControls(HWND hwnd, struct mainwinData *d)
+{
+	RECT r;
+	LONG treewidth;
+
+	if (GetClientRect(hwnd, &r) == 0)
+		panic(L"Error getting client rect of main window for relayout");
+	treewidth = (r.right - r.left) / 3;
+	if (SetWindowPos(d->treeview, NULL,
+		0, 0, treewidth, r.bottom - r.top,
+		SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER) == 0)
+		panic(L"Error repositioning main window treeview for relayout");
+	if (SetWindowPos(d->listview, NULL,
+		treewidth, 0, r.right - r.left - treewidth, r.bottom - r.top,
+		SWP_NOACTIVATE | SWP_NOOWNERZORDER | SWP_NOZORDER) == 0)
+		panic(L"Error repositioning main window listview for relayout");
+}
 
 static void onCreate(HWND hwnd)
 {
@@ -19,11 +38,30 @@ static void onCreate(HWND hwnd)
 		panic(L"Error allocating internal data structures for the main window");
 	ZeroMemory(d, sizeof (struct mainwinData));
 	SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR) d);
+
+	d->treeview = CreateWindowExW(WS_EX_CLIENTEDGE,
+		WC_TREEVIEWW, L"",
+		TVS_DISABLEDRAGDROP | TVS_HASBUTTONS | TVS_HASLINES | TVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | WS_HSCROLL | WS_VSCROLL,
+		0, 0, 100, 100,
+		hwnd, (HMENU) 100, hInstance, NULL);
+	if (d->treeview == NULL)
+		panic(L"Error creating main window treeview");
+
+	d->listview = CreateWindowExW(WS_EX_CLIENTEDGE,
+		WC_LISTVIEWW, L"",
+		LVS_ICON | WS_CHILD | WS_VISIBLE | WS_VSCROLL,
+		0, 0, 100, 100,
+		hwnd, (HMENU) 101, hInstance, NULL);
+	if (d->listview == NULL)
+		panic(L"Error creating main window listview");
+
+	relayoutControls(hwnd, d);
 }
 
 static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	struct mainwinData *d;
+	WINDOWPOS *wp = (WINDOWPOS *) lParam;
 
 	d = (struct mainwinData *) GetWindowLongPtrW(hwnd, GWLP_USERDATA);
 	if (d == NULL) {
@@ -33,6 +71,11 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 	}
 
 	switch (uMsg) {
+	case WM_WINDOWPOSCHANGED:
+		if ((wp->flags & SWP_NOSIZE) != 0)
+			break;
+		relayoutControls(hwnd, d);
+		return 0;
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		// don't fall through to WM_DESTROY; let main() do that

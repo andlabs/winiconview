@@ -21,11 +21,12 @@ As it stands, this program cannot be used to actually extract icons to files, ch
 Enjoy!
 
 TODO
-- embed the manifest for comctl32.dll version 6
-	- see how to do it in MinGW, if possible; otherwise, we're going to have to do it manually at runtime, like package ui does
+- embed the resource in the build
+- add W suffixes everywhere
 - http://stackoverflow.com/questions/23429327/winapi-lvm-deleteitem-behaves-in-unusual-ways-with-grouped-list-views
+	- rewrite the whole listview handling to see if it's still there
 - there are a bunch of TODOs scattered around the various files; those need to be done too
-- there's one bit of global state left: the `currneticons[]` array used for swapping between large and small icons
+- there's one bit of global state left: the `currenticons[]` array used for swapping between large and small icons
 - there are some memory hotspots
 	- we can dump most of the LVGROUP memory and replace it in-place with pointers to the group names for the process of sorting, then dump that
 	- we don't free the LVITEM set
@@ -33,9 +34,7 @@ TODO
 - do I need to apply `controlfont` to the list view? it doesn't look like I do...
 - add errno to panic()
 	- get rid of the stray newline at the end of the GetLastError() message
-	- apply the above two changes to the scratch Windows program in misctestprogs
-- switch to embedding the manifest either as a resource (via FraGag) or internally (like package ui does)
-- add /debug to the nmake Makefile's /link path? and is there another way to export type information too? or to use COFF symbol tables?
+	- remove the need for errno in panic()
 - change tthe GNUmakefile to also work with MinGW on Windows
 
 NICE THINGS TO HAVE

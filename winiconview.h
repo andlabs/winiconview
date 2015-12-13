@@ -1,6 +1,8 @@
 // 13 december 2015
 #include "winapi.h"
 
+#define programName L"Windows Icon Viewer"
+
 // main.c
 extern HINSTANCE hInstance;
 extern int nCmdShow;

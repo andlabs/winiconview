@@ -17,7 +17,8 @@ static void realpanic(const WCHAR *msg, DWORD code, const WCHAR *codestr)
 {
 	WCHAR *sysmsg;
 	int hasSysMsg;
-	WCHAR *errmsg;
+	// this explicit initialization makes msvc happy even though it's really initialized later
+	WCHAR *errmsg = NULL;
 
 	hasSysMsg = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, code, 0, (LPWSTR) (&sysmsg), 0, NULL) != 0;
 	if (hasSysMsg)
@@ -40,13 +41,13 @@ void panic(const WCHAR *msg)
 	WCHAR errcode[64];
 
 	lasterr = GetLastError();
-	swnprintf(errcode, 64, L"last error %I32u", lasterr);
+	_snwprintf(errcode, 64, L"last error %I32u", lasterr);
 }
 
 void panichr(const WCHAR *msg, HRESULT hr)
 {
 	WCHAR errcode[64];
 
-	swprintf(errcode, 64, L"HRESULT 0x%08I32X", hr);
+	_snwprintf(errcode, 64, L"HRESULT 0x%08I32X", hr);
 	realpanic(msg, (DWORD) hr, errcode);
 }

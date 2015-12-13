@@ -18,7 +18,7 @@ static void init(HINSTANCE winmainhInstance, int winmainnCmdShow)
 
 static void uninit(void)
 {
-	CoUninitalize();
+	CoUninitialize();
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)

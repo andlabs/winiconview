@@ -17,7 +17,7 @@ static void onCreate(HWND hwnd)
 	d = (struct mainwinData *) malloc(sizeof (struct mainwinData));
 	if (d == NULL)
 		panic(L"Error allocating internal data structures for the main window");
-	ZeroMemory(&d, sizeof (struct mainwinData));
+	ZeroMemory(d, sizeof (struct mainwinData));
 	SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR) d);
 }
 
@@ -66,13 +66,13 @@ void initMainWindow(void)
 		panic(L"Error registering main window window class");
 
 	r.left = 0;
-	r.top = 0.
-	r.right = 640;
-	r.bottom = 480;
+	r.top = 0;
+	r.right = 320;
+	r.bottom = 240;
 	if (AdjustWindowRectEx(&r, WS_OVERLAPPEDWINDOW, FALSE, 0) == 0)
 		panic(L"Error getting the appropriate size for the main window");
 	mainwin = CreateWindowExW(0,
-		mainwinClass, L"TODO",
+		mainwinClass, programName,
 		WS_OVERLAPPEDWINDOW,
 		CW_USEDEFAULT, CW_USEDEFAULT,
 		r.right - r.left, r.bottom - r.top,
@@ -95,6 +95,6 @@ void uninitMainWindow(void)
 	mainwin = NULL;
 	if (destroyRet == 0)
 		panic(L"Error destroying main winow");
-	if (UnregisterClassW(xxxx) == 0)
+	if (UnregisterClassW(mainwinClass, hInstance) == 0)
 		panic(L"Error unregistering the main window class");
 }

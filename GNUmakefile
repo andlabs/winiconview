@@ -11,8 +11,9 @@ CFILES = \
 	panic.c
 
 HFILES = \
+	winiconview.h \
 	winapi.h \
-	winiconview.h
+	resources.h
 
 RCFILES = \
 	resources.rc

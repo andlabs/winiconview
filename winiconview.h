@@ -1,5 +1,6 @@
 // 13 december 2015
 #include "winapi.h"
+#include "resources.h"
 
 #define programName L"Windows Icon Viewer"
 

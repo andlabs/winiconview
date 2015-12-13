@@ -1,5 +1,6 @@
 // 30 may 2015
 #include "winapi.h"
+#include "resources.h"
 
 // this is a UTF-8 file
 #pragma code_page(65001)
@@ -7,3 +8,23 @@
 // this is the Common Controls 6 manifest
 // TODO set up the string values in the manifest here
 CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "winiconview.manifest"
+
+// this is the main window's menubar
+rcMenu MENUEX 1000
+BEGIN
+	POPUP "File"
+	BEGIN
+		MENUITEM "Open", rcMenuOpen
+		MENUITEM "", -1, MFT_SEPARATOR
+		MENUITEM "Quit", rcMenuQuit
+	END
+	POPUP "View"
+	BEGIN
+		MENUITEM "Large Icons", rcMenuLargeIcons, MFT_RADIOCHECK, MFS_CHECKED
+		MENUITEM "Small Icons", rcMenuSmallIcons, MFT_RADIOCHECK
+	END
+	POPUP "Help"
+	BEGIN
+		MENUITEM "About", rcMenuAbout
+	END
+END

@@ -62,6 +62,7 @@ void initMainWindow(void)
 	if (wc.hCursor == NULL)
 		panic(L"Error loading application cursor during main window creation");
 	wc.hbrBackground = (HBRUSH) (COLOR_BTNFACE + 1);
+	wc.lpszMenuName = MAKEINTRESOURCE(rcMenu);
 	if (RegisterClassW(&wc) == 0)
 		panic(L"Error registering main window window class");
 
@@ -69,7 +70,7 @@ void initMainWindow(void)
 	r.top = 0;
 	r.right = 320;
 	r.bottom = 240;
-	if (AdjustWindowRectEx(&r, WS_OVERLAPPEDWINDOW, FALSE, 0) == 0)
+	if (AdjustWindowRectEx(&r, WS_OVERLAPPEDWINDOW, TRUE, 0) == 0)
 		panic(L"Error getting the appropriate size for the main window");
 	mainwin = CreateWindowExW(0,
 		mainwinClass, programName,

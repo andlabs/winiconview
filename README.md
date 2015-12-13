@@ -10,7 +10,7 @@ On Windows Vista and up, groups can also be collapsed.
 
 You can alternatively provide a directory name to scan on the command line.
 
-This program will not scan recursively into directories; it will only show files within that directory. If running as a 32-bit process on 64-bit Windows, the automatic filesystem redirection provided by WOW64 is disabled during the file browsing and icon gathering, so you can peek through both 32-bit and 64-bit files with both 32-bit and 64-bit builds.
+This program will not scan recursively into directories; it will only show files within that directory. [If running as a 32-bit process on 64-bit Windows, you can access the 64-bit C:\Windows\System32 as C:\Windows\SysNative.](https://blogs.msdn.microsoft.com/oldnewthing/20130321-00/?p=4883/)
 
 This program requires Common Controls version 6, so will only run on Windows XP and up. I don't know what the minimum service pack version of Windows XP is supported. Right now you need to use a manifest, which is provided in the source distribution.
 
@@ -35,7 +35,6 @@ TODO
 	- get rid of the stray newline at the end of the GetLastError() message
 	- apply the above two changes to the scratch Windows program in misctestprogs
 - switch to embedding the manifest either as a resource (via FraGag) or internally (like package ui does)
-- FraGag points out that the WOW64 redirection can screw with COM, ,which the Browse for Folders dialog uses...
 - add /debug to the nmake Makefile's /link path? and is there another way to export type information too? or to use COFF symbol tables?
 - change tthe GNUmakefile to also work with MinGW on Windows
 

@@ -111,19 +111,10 @@ static void addIcons(struct mainwinData *d, WCHAR *dir)
 
 	if (d->pd != NULL)
 		panic(L"BUG: Attempt to add icons while icons are being added already");
-	hr = CoCreateInstance(&CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER,
-		&IID_IProgressDialog, (LPVOID *) (&(d->pd)));
-	if (hr != S_OK)
-		panichr(L"Error creating progress dialog for adding icons", hr);
-	hr = IProgressDialog_SetTitle(d->pd, L"Adding icons");
-	if (hr != S_OK)
-		panichr(L"Error setting progress dialog title for adding icons", hr);
-	hr = IProgressDialog_StartProgressDialog(d->pd,
-		d->hwnd, NULL,
-		PROGDLG_NORMAL | PROGDLG_MODAL | PROGDLG_NOTIME | PROGDLG_NOMINIMIZE,
-		NULL);
-	if (hr != S_OK)
-		panichr(L"Error starting progress dialog for adding icons", hr);
+	d->pd = newProgressDialog();
+	progdlgSetTexts(d->pd, L"Adding icons");
+	progdlgStart(d->pd, d->hwnd,
+		PROGDLG_NORMAL | PROGDLG_MODAL | PROGDLG_NOTIME | PROGDLG_NOMINIMIZE);
 
 	hr = collectFiles(dir, &entries, &total);
 	if (hr != S_OK)
@@ -138,11 +129,7 @@ static LRESULT iconsProgress(struct mainwinData *d, ULONGLONG *completed, ULONGL
 		panic(L"BUG: Attempt to continue adding icons while icons are not being added");
 	// IProgressDialog doesn't like it if we set the progress to 0 items completed
 	// it will return an HRESULT value of 1
-	if (*completed != 0) {
-		hr = IProgressDialog_SetProgress64(d->pd, *completed, *total);
-		if (hr != S_OK)
-			panichr(L"Error updating progress dialog for adding icons", hr);
-	}
+	if (*completed != 0) {}
 	return (LRESULT) IProgressDialog_HasUserCancelled(d->pd);
 }
 
@@ -155,10 +142,7 @@ static void iconsFinished(struct mainwinData *d, struct entry *entries, struct g
 
 	// TODO on success, add icons here
 
-	hr = IProgressDialog_StopProgressDialog(d->pd);
-	if (hr != S_OK)
-		panic(L"Error stopping progress dialog for adding icons");
-	IProgressDialog_Release(d->pd);
+	progdlgDestroy(d->pd);
 	d->pd = NULL;
 
 	if (err != NULL) {

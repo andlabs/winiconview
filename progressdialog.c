@@ -126,3 +126,63 @@ HRESULT IProgressDialog_Timer(IProgressDialog *pd, DWORD a, LPCVOID b)
 {
 	return transmogrify(pd)->Timer(pd, a, b);
 }
+
+// And now, some helper functions.
+
+IProgressDialog *newProgressDialog(void)
+{
+	IProgressDialog *pd;
+	HRESULT hr;
+
+	hr = CoCreateInstance(&CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER,
+		&IID_IProgressDialog, (LPVOID *) (&(d->pd)));
+	if (hr != S_OK)
+		panichr(L"Error creating progress dialog", hr);
+	return pd;
+}
+
+void progdlgSetTexts(IProgressDialog *pd, WCHAR *title)
+{
+	HRESULT;
+
+	hr = IProgressDialog_SetTitle(pd, title);
+	if (hr != S_OK)
+		panichr(L"Error setting progress dialog title", hr);
+}
+
+void progdlgStart(IProgressDialog *pd, HWND owner, DWORD flags)
+{
+	HRESULT hr;
+
+	hr = IProgressDialog_StartProgressDialog(pd, owner, NULL, flags, NULL);
+	if (hr != S_OK)
+		panichr(L"Error starting progress dialog", hr);
+}
+
+void progdlgResetTimer(IProgressDialog *pd)
+{
+	HRESULT hr;
+
+	hr = IProgressDIalog_Timer(pd, PDTIMER_RESET, NULL);
+	if (hr != S_OK)
+		panichr(L"Error resetting progress dialog timer", hr);
+}
+
+void progdlgSetProgress(IProgressDialog *pd, ULONGLONG current, ULONGLONG total)
+{
+	HRESULT hr;
+
+	hr = IProgressDialog_SetProgress64(pd, completed, total);
+	if (hr != S_OK)
+		panichr(L"Error updating progress dialog", hr);
+}
+
+void progdlgDestroy(IProgressDialog *pd)
+{
+	HRESULT hr;
+
+	hr = IProgressDialog_StopProgressDialog(pd);
+	if (hr != S_OK)
+		panichr(L"Error stopping progress dialog", hr);
+	IProgressDialog_Release(pd);
+}

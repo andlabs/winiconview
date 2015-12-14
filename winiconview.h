@@ -57,3 +57,9 @@ extern HRESULT IProgressDialog_SetProgress64(IProgressDialog *pd, ULONGLONG a, U
 extern HRESULT IProgressDialog_SetLine(IProgressDialog *pd, DWORD a, PCWSTR b, BOOL c, LPCVOID d);
 extern HRESULT IProgressDialog_SetCancelMsg(IProgressDialog *pd, PCWSTR a, LPCVOID b);
 extern HRESULT IProgressDialog_Timer(IProgressDialog *pd, DWORD a, LPCVOID b);
+extern IProgressDialog *newProgressDialog(void);
+extern void progdlgSetTexts(IProgressDialog *pd, WCHAR *title);
+extern void progdlgStart(IProgressDialog *pd, HWND owner, DWORD flags);
+extern void progdlgResetTimer(IProgressDialog *pd);
+extern void progdlgSetProgress(IProgressDialog *pd, ULONGLONG current, ULONGLONG total);
+extern void progdlgDestroy(IProgressDialog *pd);

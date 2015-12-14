@@ -7,8 +7,10 @@ HWND mainwin = NULL;
 #define mainwinClass L"winiconview_mainwin"
 
 struct mainwinData {
+	HMENU menu;
 	HWND treeview;
 	HWND listview;
+	int currentSize;		// 0 = large, 1 = small
 };
 
 static void relayoutControls(HWND hwnd, struct mainwinData *d)
@@ -39,6 +41,10 @@ static void onCreate(HWND hwnd)
 	ZeroMemory(d, sizeof (struct mainwinData));
 	SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR) d);
 
+	d->menu = GetMenu(hwnd);
+	if (d->menu == NULL)
+		panic(L"Error getting main window menu for later use");
+
 	d->treeview = CreateWindowExW(WS_EX_CLIENTEDGE,
 		WC_TREEVIEWW, L"",
 		TVS_DISABLEDRAGDROP | TVS_HASBUTTONS | TVS_HASLINES | TVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | WS_HSCROLL | WS_VSCROLL,
@@ -58,6 +64,19 @@ static void onCreate(HWND hwnd)
 	relayoutControls(hwnd, d);
 }
 
+static void changeCurrentSize(HWND hwnd, struct mainwinData *d, int which)
+{
+	d->currentSize = which;
+
+	// TODO
+
+	if (CheckMenuRadioItem(d->menu,
+		rcMenuLargeIcons, rcMenuSmallIcons,
+		rcMenuLargeIcons + d->currentSize,
+		MF_BYCOMMAND) == 0)
+		panic(L"Error adjusting View menu radio buttons after changing icon size");
+}
+
 static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	struct mainwinData *d;
@@ -71,6 +90,27 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 	}
 
 	switch (uMsg) {
+	case WM_COMMAND:
+		if (HIWORD(wParam) != 0)
+			break;
+		switch (LOWORD(wParam)) {
+		case rcMenuOpen:
+			// TODO
+			break;
+		case rcMenuQuit:
+			PostQuitMessage(0);
+			break;
+		case rcMenuLargeIcons:
+			changeCurrentSize(hwnd, d, 0);
+			break;
+		case rcMenuSmallIcons:
+			changeCurrentSize(hwnd, d, 1);
+			break;
+		case rcMenuAbout:
+			// TODO
+			break;
+		}
+		break;
 	case WM_WINDOWPOSCHANGED:
 		if ((wp->flags & SWP_NOSIZE) != 0)
 			break;

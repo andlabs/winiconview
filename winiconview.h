@@ -9,10 +9,10 @@ extern HINSTANCE hInstance;
 extern int nCmdShow;
 
 // mainwin.c
-extern HWND mainwin;
-extern void initMainWindow(void);
-extern void uninitMainWindow(void);
+extern HWND initMainWindow(void);
+extern void uninitMainWindow(HWND mainwin);
 
 // panic.c
+extern HWND panicParent;
 extern void panic(const WCHAR *msg);
 extern void panichr(const WCHAR *msg, HRESULT hr);

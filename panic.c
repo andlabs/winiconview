@@ -1,6 +1,8 @@
 // 13 december 2015
 #include "winiconview.h"
 
+HWND panicParent = NULL;
+
 static WCHAR *panicformat(WCHAR *format, ...)
 {
 	va_list ap;
@@ -25,7 +27,7 @@ static void realpanic(const WCHAR *msg, DWORD code, const WCHAR *codestr)
 		errmsg = panicformat(L"%1!ws!: %2!ws! (%3!ws!)%0", errmsg, sysmsg, codestr);
 	else
 		errmsg = panicformat(L"%1!ws! (%2!ws!)%0", errmsg, codestr);
-	if (MessageBoxW(mainwin, errmsg, programName, MB_OK | MB_ICONERROR) == 0)
+	if (MessageBoxW(panicParent, errmsg, programName, MB_OK | MB_ICONERROR) == 0)
 		abort();
 	if (LocalFree(errmsg) == NULL)
 		abort();

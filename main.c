@@ -30,11 +30,13 @@ static void uninit(void)
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow)
 {
+	HWND mainwin;
 	MSG msg;
 	BOOL gmret;
 
 	init(hInstance, nCmdShow);
-	initMainWindow();
+	mainwin = initMainWindow();
+	panicParent = mainwin;
 
 	for (;;) {
 		gmret = GetMessageW(&msg, NULL, 0, 0);
@@ -46,7 +48,9 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		DispatchMessageW(&msg);
 	}
 
-	uninitMainWindow();
+	// this part is important; otherwise panic() will try to MessageBoxW() on a destroyed window
+	panicParent = NULL;
+	uninitMainWindow(mainwin);
 	uninit();
 	return 0;
 }

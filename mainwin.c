@@ -1,9 +1,6 @@
 // 13 december 2015
 #include "winiconview.h"
 
-// explicitly initialize to NULL for panic()
-HWND mainwin = NULL;
-
 #define mainwinClass L"winiconview_mainwin"
 
 struct mainwinData {
@@ -129,10 +126,11 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 	return DefWindowProcW(hwnd, uMsg, wParam, lParam);
 }
 
-void initMainWindow(void)
+HWND initMainWindow(void)
 {
 	WNDCLASSW wc;
 	RECT r;
+	HWND mainwin;
 
 	ZeroMemory(&wc, sizeof (WNDCLASSW));
 	wc.lpszClassName = mainwinClass;
@@ -167,16 +165,17 @@ void initMainWindow(void)
 	ShowWindow(mainwin, nCmdShow);
 	if (UpdateWindow(mainwin) == 0)
 		panic(L"Error showing the main window for the first time");
+
+	panicParent = mainwin;
+	return mainwin;
 }
 
 // TODO report errors?
-void uninitMainWindow(void)
+void uninitMainWindow(HWND mainwin)
 {
 	BOOL destroyRet;
 
 	destroyRet = DestroyWindow(mainwin);
-	// this part is important; otherwise panic() will try to MessageBoxW() on a destroyed window
-	mainwin = NULL;
 	if (destroyRet == 0)
 		panic(L"Error destroying main winow");
 	if (UnregisterClassW(mainwinClass, hInstance) == 0)

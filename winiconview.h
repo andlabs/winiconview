@@ -29,6 +29,24 @@ enum {
 extern HWND initMainWindow(void);
 extern void uninitMainWindow(HWND mainwin);
 
+// geticons.c
+struct entry {
+	WCHAR *filename;
+	UINT n;
+	HIMAGELIST largeIcons;
+	HIMAGELIST smallIcons;
+	struct entry *next;
+};
+extern struct entry *allocEntry(struct entry *prev, WCHAR *filename);
+extern void freeEntries(struct entry *cur);
+
+// util.c
+extern struct findFile *startFindFile(WCHAR *path);
+extern BOOL findFileNext(struct findFile *ff);
+extern WCHAR *findFileName(struct findFile *ff);
+extern HRESULT findFileError(struct findFile *ff);
+extern HRESULT findFileEnd(struct findFile *ff);
+
 // panic.c
 extern HWND panicParent;
 extern void panic(const WCHAR *msg);

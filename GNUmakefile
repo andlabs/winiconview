@@ -9,7 +9,8 @@ CFILES = \
 	main.c \
 	mainwin.c \
 	panic.c \
-	progressdialog.c
+	progressdialog.c \
+	util.c
 
 HFILES = \
 	winiconview.h \
@@ -35,7 +36,7 @@ CFLAGS += \
 # TODO subsystem version
 LDFLAGS += \
 	/largeaddressaware /nologo /incremental:no \
-	user32.lib kernel32.lib gdi32.lib ole32.lib comctl32.lib shell32.lib
+	user32.lib kernel32.lib gdi32.lib ole32.lib comctl32.lib shell32.lib shlwapi.lib
 
 ifneq ($(NODEBUG),1)
 	CFLAGS += /Zi

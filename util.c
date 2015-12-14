@@ -35,7 +35,7 @@ struct findFile *startFindFile(WCHAR *path)
 	if (ff == NULL)
 		return NULL;
 	ZeroMemory(ff, sizeof (struct findFile));
-	ff->dir = FindFirstFileW(path, &(ff->entry));
+	ff->dir = FindFirstFileW(finddir, &(ff->entry));
 	// get the first file now
 	// findFileNext() will see that ff->first is TRUE and return immediately; we get that first file's info then
 	if (ff->dir == INVALID_HANDLE_VALUE)

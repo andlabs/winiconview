@@ -33,3 +33,18 @@ extern void uninitMainWindow(HWND mainwin);
 extern HWND panicParent;
 extern void panic(const WCHAR *msg);
 extern void panichr(const WCHAR *msg, HRESULT hr);
+
+// progressdialog.c
+extern HRESULT IProgressDialog_QueryInterface(IProgressDialog *pd, REFIID a, void **b);
+extern ULONG IProgressDialog_AddRef(IProgressDialog *pd);
+extern ULONG IProgressDialog_Release(IProgressDialog *pd);
+extern HRESULT IProgressDialog_StartProgressDialog(IProgressDialog *pd, HWND a, IUnknown *b, DWORD c, LPCVOID d);
+extern HRESULT IProgressDialog_StopProgressDialog(IProgressDialog *pd);
+extern HRESULT IProgressDialog_SetTitle(IProgressDialog *pd, PCWSTR a);
+extern HRESULT IProgressDialog_SetAnimation(IProgressDialog *pd, HINSTANCE a, UINT b);
+extern BOOL IProgressDialog_HasUserCancelled(IProgressDialog *pd);
+extern HRESULT IProgressDialog_SetProgress(IProgressDialog *pd, DWORD a, DWORD b);
+extern HRESULT IProgressDialog_SetProgress64(IProgressDialog *pd, ULONGLONG a, ULONGLONG b);
+extern HRESULT IProgressDialog_SetLine(IProgressDialog *pd, DWORD a, PCWSTR b, BOOL c, LPCVOID d);
+extern HRESULT IProgressDialog_SetCancelMsg(IProgressDialog *pd, PCWSTR a, LPCVOID b);
+extern HRESULT IProgressDialog_Timer(IProgressDialog *pd, DWORD a, LPCVOID b);

@@ -8,7 +8,8 @@ OBJDIR = .obj
 CFILES = \
 	main.c \
 	mainwin.c \
-	panic.c
+	panic.c \
+	progressdialog.c
 
 HFILES = \
 	winiconview.h \

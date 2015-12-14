@@ -120,6 +120,8 @@ static void beginAddIcons(struct mainwinData *d, WCHAR *dir)
 		NULL);
 	if (hr != S_OK)
 		panichr(L"Error starting progress dialog for adding icons", hr);
+	// this must be last! if it fails it will send a msgFinished
+	getIcons(d->hwnd, dir);
 }
 
 static LRESULT iconsProgress(struct mainwinData *d, ULONGLONG *completed, ULONGLONG *total)

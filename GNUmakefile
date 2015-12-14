@@ -6,6 +6,7 @@ OUT = winiconview.exe
 OBJDIR = .obj
 
 CFILES = \
+	geticons.c \
 	main.c \
 	mainwin.c \
 	panic.c \

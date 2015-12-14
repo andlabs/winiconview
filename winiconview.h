@@ -22,7 +22,7 @@ enum {
 	msgProgress,
 	// Sent by collector thread when done. Not sent if user cancelled.
 	// wParam - if successful, TODO
-	// lParam - if failure, TODO
+	// lParam - if failure, pointer to struct getIconsFailure
 	// lResult - 0
 	msgFinished,
 };
@@ -39,6 +39,11 @@ struct entry {
 };
 extern struct entry *allocEntry(struct entry *prev, WCHAR *filename);
 extern void freeEntries(struct entry *cur);
+struct getIconsFailure {
+	const WCHAR *msg;
+	HRESULT hr;
+};
+extern void getIcons(HWND hwnd, WCHAR *dir);
 
 // util.c
 extern struct findFile *startFindFile(WCHAR *path);

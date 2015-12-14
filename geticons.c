@@ -40,7 +40,7 @@ void freeEntries(struct entry *cur)
 	}
 }
 
-static HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count)
+HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count)
 {
 	struct entry *first;
 	struct entry *current;
@@ -85,112 +85,4 @@ static HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count)
 	*out = first;
 	*count = cnt;
 	return S_OK;
-}
-
-// TODO
-
-struct giparams {
-	HWND hwnd;
-	WCHAR *dir;
-};
-
-static DWORD WINAPI getIconsThread(LPVOID vinput)
-{
-	struct giparams *p = (struct giparams *) vinput;
-	struct entry *entries;
-	ULONGLONG completed;
-	ULONGLONG total;
-	DWORD result;
-	struct getIconsFailure err;
-	LRESULT cancelled;
-	HRESULT hr;
-
-	hr = collectFiles(p->dir, &entries, &total);
-	if (hr != S_OK) {
-		err.msg = L"Error collecting files to get icons out of";
-		err.hr = hr;
-		goto fail;
-	}
-	// TODO provide an API for this
-	if (total == 0) {
-		err.msg = L"No files";
-		goto fail;
-	}
-
-	for (completed = 0; completed < total; completed++) {
-		cancelled = SendMessageW(p->hwnd, msgProgress,
-			(WPARAM) (&completed), (LPARAM) (&total));
-		if (cancelled != 0)
-			goto cancelled;
-		// TODO
-		Sleep(500);
-	}
-	// send the completed progress just to be safe
-	SendMessageW(p->hwnd, msgProgress,
-		(WPARAM) (&completed), (LPARAM) (&total));
-	goto send;
-
-cancelled:
-	// operation cancelled; nuke entries and send back NULL
-	freeEntries(entries);
-	entries = NULL;
-	// fall through to send
-
-send:
-	// and we're done! give all this stuff back to the main window
-	SendMessageW(p->hwnd, msgFinished, (WPARAM) entries, 0);
-	result = 0;
-	goto out;
-
-fail:
-	SendMessageW(p->hwnd, msgFinished, 0, (LPARAM) (&err));
-	result = 1;
-	// fall through to out
-
-out:
-	free(p->dir);
-	free(p);
-	return result;
-}
-
-void getIcons(HWND hwnd, WCHAR *dir)
-{
-	struct giparams *p;
-	struct getIconsFailure err;
-	DWORD lasterr;
-
-	p = (struct giparams *) malloc (sizeof (struct giparams));
-	if (p == NULL) {
-		err.msg = L"Error allocating memory for icon collection thread";
-		err.hr = E_OUTOFMEMORY;
-		goto fail;
-	}
-	ZeroMemory(p, sizeof (struct giparams));
-	p->hwnd = hwnd;
-	p->dir = _wcsdup(dir);
-	if (p->dir == NULL) {
-		err.msg = L"Error copying directory name for icon collection thread";
-		err.hr = E_OUTOFMEMORY;
-		goto fail;
-	}
-
-	if (CreateThread(NULL, 0, getIconsThread, p, 0, NULL) == NULL) {
-		lasterr = GetLastError();
-		err.msg = L"Error creating icon collection thread";
-		err.hr = HRESULT_FROM_WIN32(lasterr);
-		if (err.hr == S_OK)		// if lasterr is 0
-			err.hr = E_FAIL;
-		goto fail;
-	}
-
-	// all done!
-	return;
-
-fail:
-	if (p != NULL) {
-		if (p->dir != NULL)
-			free(p->dir);
-		free(p);
-	}
-	SendMessageW(hwnd, msgFinished, 0, (LPARAM) (&err));
 }

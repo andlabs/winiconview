@@ -101,8 +101,12 @@ static void changeCurrentSize(struct mainwinData *d, int which)
 		panic(L"Error adjusting View menu radio buttons after changing icon size");
 }
 
-static void beginAddIcons(struct mainwinData *d, WCHAR *dir)
+static void addIcons(struct mainwinData *d, WCHAR *dir)
 {
+	struct entry *entries;
+	struct entry *current;
+	ULONGLONG completed;
+	ULONGLONG total;
 	HRESULT hr;
 
 	if (d->pd != NULL)
@@ -120,8 +124,10 @@ static void beginAddIcons(struct mainwinData *d, WCHAR *dir)
 		NULL);
 	if (hr != S_OK)
 		panichr(L"Error starting progress dialog for adding icons", hr);
-	// this must be last! if it fails it will send a msgFinished
-	getIcons(d->hwnd, dir);
+
+	hr = collectFiles(dir, &entries, &total);
+	if (hr != S_OK)
+		;	// TODO
 }
 
 static LRESULT iconsProgress(struct mainwinData *d, ULONGLONG *completed, ULONGLONG *total)
@@ -175,12 +181,7 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 
 	switch (uMsg) {
 	case msgAddIcons:
-		beginAddIcons(d, (WCHAR *) wParam);
-		return 0;
-	case msgProgress:
-		return iconsProgress(d, (ULONGLONG *) wParam, (ULONGLONG *) lParam);
-	case msgFinished:
-		iconsFinished(d, (struct entry *) wParam, (struct getIconsFailure *) lParam);
+		addIcons(d, (WCHAR *) wParam);
 		return 0;
 	case WM_COMMAND:
 		if (HIWORD(wParam) != 0)

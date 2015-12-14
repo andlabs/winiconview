@@ -15,17 +15,6 @@ enum {
 	// lParam - 0
 	// lResult - 0
 	msgAddIcons = WM_USER + 40,
-	// Sent by collector thread to indicate progress.
-	// wParam - ULONGLONG pointer with number of items completed
-	// lParam - ULONGLONG pointer with number of items total
-	// lResult - nonzero if user cancelled
-	msgProgress,
-	// Sent by collector thread when done. Not sent if user cancelled.
-	// wParam - if successful, pointer to struct entry of first entry
-	// lParam - if failure, pointer to struct getIconsFailure
-	// both should be 0 if the operation was cancelled
-	// lResult - 0
-	msgFinished,
 };
 extern HWND initMainWindow(void);
 extern void uninitMainWindow(HWND mainwin);
@@ -40,11 +29,7 @@ struct entry {
 };
 extern struct entry *allocEntry(struct entry *prev, WCHAR *filename);
 extern void freeEntries(struct entry *cur);
-struct getIconsFailure {
-	const WCHAR *msg;
-	HRESULT hr;
-};
-extern void getIcons(HWND hwnd, WCHAR *dir);
+extern HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count);
 
 // util.c
 extern struct findFile *startFindFile(WCHAR *path);

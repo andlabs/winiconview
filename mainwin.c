@@ -131,13 +131,12 @@ static LRESULT iconsProgress(struct mainwinData *d, ULONGLONG *completed, ULONGL
 	if (d->pd == NULL)
 		panic(L"BUG: Attempt to continue adding icons while icons are not being added");
 	hr = IProgressDialog_SetProgress64(d->pd, *completed, *total);
-// TODO this is returning 0x1 for some reason
-//	if (hr != S_OK)
-//		panichr(L"Error updating progress dialog for adding icons", hr);
+	if (hr != S_OK)
+		panichr(L"Error updating progress dialog for adding icons", hr);
 	return (LRESULT) IProgressDialog_HasUserCancelled(d->pd);
 }
 
-static void iconsFinished(struct mainwinData *d/* TODO */)
+static void iconsFinished(struct mainwinData *d, struct entry *entries, struct getIconsFailure *err)
 {
 	HRESULT hr;
 
@@ -152,7 +151,10 @@ static void iconsFinished(struct mainwinData *d/* TODO */)
 	IProgressDialog_Release(d->pd);
 	d->pd = NULL;
 
-	// TODO on error, display error HERE AND DO NOT PANIC
+	if (err != NULL) {
+		// TODO
+		MessageBoxW(d->hwnd, err->msg, L"It failed", 0);
+	}
 }
 
 static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -174,7 +176,7 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 	case msgProgress:
 		return iconsProgress(d, (ULONGLONG *) wParam, (ULONGLONG *) lParam);
 	case msgFinished:
-		iconsFinished(d/* TODO */);
+		iconsFinished(d, (struct entry *) wParam, (struct getIconsFailure *) lParam);
 		return 0;
 	case WM_COMMAND:
 		if (HIWORD(wParam) != 0)

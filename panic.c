@@ -24,9 +24,9 @@ static void realpanic(const WCHAR *msg, DWORD code, const WCHAR *codestr)
 
 	hasSysMsg = FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, code, 0, (LPWSTR) (&sysmsg), 0, NULL) != 0;
 	if (hasSysMsg)
-		errmsg = panicformat(L"%1!ws!: %2!ws! (%3!ws!)%0", errmsg, sysmsg, codestr);
+		errmsg = panicformat(L"%1!ws!: %2!ws! (%3!ws!)%0", msg, sysmsg, codestr);
 	else
-		errmsg = panicformat(L"%1!ws! (%2!ws!)%0", errmsg, codestr);
+		errmsg = panicformat(L"%1!ws! (%2!ws!)%0", msg, codestr);
 	if (MessageBoxW(panicParent, errmsg, programName, MB_OK | MB_ICONERROR) == 0)
 		abort();
 	if (LocalFree(errmsg) == NULL)

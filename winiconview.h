@@ -21,7 +21,7 @@ enum {
 	// lResult - nonzero if user cancelled
 	msgProgress,
 	// Sent by collector thread when done. Not sent if user cancelled.
-	// wParam - if successful, TODO
+	// wParam - if successful, pointer to struct entry of first entry
 	// lParam - if failure, pointer to struct getIconsFailure
 	// lResult - 0
 	msgFinished,

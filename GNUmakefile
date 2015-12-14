@@ -34,7 +34,7 @@ CFLAGS += \
 # TODO subsystem version
 LDFLAGS += \
 	/largeaddressaware /nologo /incremental:no \
-	user32.lib kernel32.lib gdi32.lib ole32.lib comctl32.lib
+	user32.lib kernel32.lib gdi32.lib ole32.lib comctl32.lib shell32.lib
 
 ifneq ($(NODEBUG),1)
 	CFLAGS += /Zi

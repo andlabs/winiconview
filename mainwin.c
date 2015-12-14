@@ -4,18 +4,20 @@
 #define mainwinClass L"winiconview_mainwin"
 
 struct mainwinData {
+	HWND hwnd;
 	HMENU menu;
 	HWND treeview;
 	HWND listview;
 	int currentSize;		// 0 = large, 1 = small
+	IProgressDialog *pd;
 };
 
-static void relayoutControls(HWND hwnd, struct mainwinData *d)
+static void relayoutControls(struct mainwinData *d)
 {
 	RECT r;
 	LONG treewidth;
 
-	if (GetClientRect(hwnd, &r) == 0)
+	if (GetClientRect(d->hwnd, &r) == 0)
 		panic(L"Error getting client rect of main window for relayout");
 	treewidth = (r.right - r.left) / 3;
 	if (SetWindowPos(d->treeview, NULL,
@@ -38,7 +40,9 @@ static void onCreate(HWND hwnd)
 	ZeroMemory(d, sizeof (struct mainwinData));
 	SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR) d);
 
-	d->menu = GetMenu(hwnd);
+	d->hwnd = hwnd;
+
+	d->menu = GetMenu(d->hwnd);
 	if (d->menu == NULL)
 		panic(L"Error getting main window menu for later use");
 
@@ -46,7 +50,7 @@ static void onCreate(HWND hwnd)
 		WC_TREEVIEWW, L"",
 		TVS_DISABLEDRAGDROP | TVS_HASBUTTONS | TVS_HASLINES | TVS_SHOWSELALWAYS | WS_CHILD | WS_VISIBLE | WS_HSCROLL | WS_VSCROLL,
 		0, 0, 100, 100,
-		hwnd, (HMENU) 100, hInstance, NULL);
+		d->hwnd, (HMENU) 100, hInstance, NULL);
 	if (d->treeview == NULL)
 		panic(L"Error creating main window treeview");
 
@@ -54,14 +58,37 @@ static void onCreate(HWND hwnd)
 		WC_LISTVIEWW, L"",
 		LVS_ICON | WS_CHILD | WS_VISIBLE | WS_VSCROLL,
 		0, 0, 100, 100,
-		hwnd, (HMENU) 101, hInstance, NULL);
+		d->hwnd, (HMENU) 101, hInstance, NULL);
 	if (d->listview == NULL)
 		panic(L"Error creating main window listview");
 
-	relayoutControls(hwnd, d);
+	relayoutControls(d);
 }
 
-static void changeCurrentSize(HWND hwnd, struct mainwinData *d, int which)
+static void chooseFolder(struct mainwinData *d)
+{
+	BROWSEINFOW bi;
+	PIDLIST_ABSOLUTE pidl;
+	// THIS WILL CUT OFF. BIG TODO.
+	WCHAR path[(4 * MAX_PATH) + 1];
+
+	ZeroMemory(&bi, sizeof (BROWSEINFOW));
+	bi.hwndOwner = d->hwnd;
+	bi.lpszTitle = L"Select a folder below. Note that " programName L" does not search subdirectories of the chosen folder.";
+	bi.ulFlags = BIF_EDITBOX | BIF_NEWDIALOGSTYLE | BIF_NONEWFOLDERBUTTON;
+	pidl = SHBrowseForFolderW(&bi);
+	if (pidl == NULL)		// cancelled
+		return;
+
+	path[0] = L'\0';			// TODO I forget why this was needed
+	// TODO resolve shortcuts
+	if (SHGetPathFromIDListW(pidl, path) == FALSE)
+		panic(L"Error extracting folder path from PIDL from folder dialog");
+	CoTaskMemFree(pidl);
+	SendMessageW(d->hwnd, msgAddIcons, (WPARAM) path, 0);
+}
+
+static void changeCurrentSize(struct mainwinData *d, int which)
 {
 	d->currentSize = which;
 
@@ -72,6 +99,57 @@ static void changeCurrentSize(HWND hwnd, struct mainwinData *d, int which)
 		rcMenuLargeIcons + d->currentSize,
 		MF_BYCOMMAND) == 0)
 		panic(L"Error adjusting View menu radio buttons after changing icon size");
+}
+
+static void beginAddIcons(struct mainwinData *d, WCHAR *dir)
+{
+	HRESULT hr;
+
+	if (d->pd != NULL)
+		panic(L"BUG: Attempt to add icons while icons are being added already");
+	hr = CoCreateInstance(&CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER,
+		&IID_IProgressDialog, (LPVOID *) (&(d->pd)));
+	if (hr != S_OK)
+		panichr(L"Error creating progress dialog for adding icons", hr);
+	hr = IProgressDialog_SetTitle(d->pd, L"Adding icons");
+	if (hr != S_OK)
+		panichr(L"Error setting progress dialog title for adding icons", hr);
+	hr = IProgressDialog_StartProgressDialog(d->pd,
+		d->hwnd, NULL,
+		PROGDLG_NORMAL | PROGDLG_MODAL | PROGDLG_NOTIME | PROGDLG_NOMINIMIZE,
+		NULL);
+	if (hr != S_OK)
+		panichr(L"Error starting progress dialog for adding icons", hr);
+}
+
+static LRESULT iconsProgress(struct mainwinData *d, ULONGLONG *completed, ULONGLONG *total)
+{
+	HRESULT hr;
+
+	if (d->pd == NULL)
+		panic(L"BUG: Attempt to continue adding icons while icons are not being added");
+	hr = IProgressDialog_SetProgress64(d->pd, *completed, *total);
+	if (hr != S_OK)
+		panichr(L"Error updating progress dialog for adding icons", hr);
+	return (LRESULT) IProgressDialog_HasUserCancelled(d->pd);
+}
+
+static void iconsFinished(struct mainwinData *d/* TODO */)
+{
+	HRESULT hr;
+
+	if (d->pd == NULL)
+		panic(L"BUG: Attempt to finish adding icons while icons are not being added");
+
+	// TODO on success, add icons here
+
+	hr = IProgressDialog_StopProgressDialog(d->pd);
+	if (hr != S_OK)
+		panic(L"Error stopping progress dialog for adding icons");
+	IProgressDialog_Release(d->pd);
+	d->pd = NULL;
+
+	// TODO on error, display error HERE AND DO NOT PANIC
 }
 
 static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
@@ -87,21 +165,29 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 	}
 
 	switch (uMsg) {
+	case msgAddIcons:
+		beginAddIcons(d, (WCHAR *) wParam);
+		return 0;
+	case msgProgress:
+		return iconsProgress(d, (ULONGLONG *) wParam, (ULONGLONG *) lParam);
+	case msgFinished:
+		iconsFinished(d/* TODO */);
+		return 0;
 	case WM_COMMAND:
 		if (HIWORD(wParam) != 0)
 			break;
 		switch (LOWORD(wParam)) {
 		case rcMenuOpen:
-			// TODO
+			chooseFolder(d);
 			break;
 		case rcMenuQuit:
 			PostQuitMessage(0);
 			break;
 		case rcMenuLargeIcons:
-			changeCurrentSize(hwnd, d, 0);
+			changeCurrentSize(d, 0);
 			break;
 		case rcMenuSmallIcons:
-			changeCurrentSize(hwnd, d, 1);
+			changeCurrentSize(d, 1);
 			break;
 		case rcMenuAbout:
 			// TODO
@@ -111,7 +197,7 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 	case WM_WINDOWPOSCHANGED:
 		if ((wp->flags & SWP_NOSIZE) != 0)
 			break;
-		relayoutControls(hwnd, d);
+		relayoutControls(d);
 		return 0;
 	case WM_CLOSE:
 		PostQuitMessage(0);

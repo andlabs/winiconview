@@ -31,35 +31,7 @@ static void parseArgs(void)
 			goto usage;
 		}
 		dirname = argv[1];
-	} else {
-		HRESULT res;
-		BROWSEINFO bi;
-		PIDLIST_ABSOLUTE pidl;
-
-		// the browse for folders dialog uses COM
-		res = CoInitialize(NULL);
-		if (res != S_OK && res != S_FALSE)
-			panic(L"error initializing COM for browse for folders dialog");
-		ZeroMemory(&bi, sizeof (BROWSEINFO));
-		bi.lpszTitle = folderDialogHelpText;
-		bi.ulFlags = BIF_EDITBOX | BIF_NEWDIALOGSTYLE | BIF_NONEWFOLDERBUTTON;
-		pidl = SHBrowseForFolder(&bi);
-		if (pidl != NULL) {
-			// THIS WILL CUT OFF. BIG TODO.
-			// static so we can save it without doing /another/ string copy
-			static WCHAR path[(4 * MAX_PATH) + 1];
-
-			path[0] = L'\0';			// TODO I forget why this was needed
-			// TODO resolve shortcuts
-			if (SHGetPathFromIDList(pidl, path) == FALSE)
-				panic(L"error extracting folder from PIDL from folder dialog");
-			dirname = path;
-			CoTaskMemFree(pidl);
-		}
-		CoUninitialize();
-		if (dirname == NULL)		// don't quit if a directory was selected
-			exit(0);
-	}
+	} else {}
 	return;
 
 usage:

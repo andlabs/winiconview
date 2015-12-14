@@ -3,6 +3,8 @@
 #define UNICODE
 #define STRICT
 #define STRICT_TYPED_ITEMIDS
+#define CINTERFACE
+#define COBJMACROS
 // get Windows version right; right now Windows XP
 #define WINVER 0x0501
 #define _WIN32_WINNT 0x0501

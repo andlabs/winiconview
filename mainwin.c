@@ -130,9 +130,13 @@ static LRESULT iconsProgress(struct mainwinData *d, ULONGLONG *completed, ULONGL
 
 	if (d->pd == NULL)
 		panic(L"BUG: Attempt to continue adding icons while icons are not being added");
-	hr = IProgressDialog_SetProgress64(d->pd, *completed, *total);
-	if (hr != S_OK)
-		panichr(L"Error updating progress dialog for adding icons", hr);
+	// IProgressDialog doesn't like it if we set the progress to 0 items completed
+	// it will return an HRESULT value of 1
+	if (*completed != 0) {
+		hr = IProgressDialog_SetProgress64(d->pd, *completed, *total);
+		if (hr != S_OK)
+			panichr(L"Error updating progress dialog for adding icons", hr);
+	}
 	return (LRESULT) IProgressDialog_HasUserCancelled(d->pd);
 }
 

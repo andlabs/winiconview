@@ -99,6 +99,7 @@ static DWORD WINAPI getIconsThread(LPVOID vinput)
 	ULONGLONG total;
 	DWORD result;
 	struct getIconsFailure err;
+	LRESULT cancelled;
 	HRESULT hr;
 
 	hr = collectFiles(p->dir, &entries, &total);
@@ -107,19 +108,32 @@ static DWORD WINAPI getIconsThread(LPVOID vinput)
 		err.hr = hr;
 		goto fail;
 	}
+	// TODO provide an API for this
+	if (total == 0) {
+		err.msg = L"No files";
+		goto fail;
+	}
 
 	for (completed = 0; completed < total; completed++) {
-		// TODO make this asynchronous?
-		// TODO see if IProgressDialog docs say anything
-		SendMessageW(p->hwnd, msgProgress,
+		cancelled = SendMessageW(p->hwnd, msgProgress,
 			(WPARAM) (&completed), (LPARAM) (&total));
+		if (cancelled != 0)
+			goto cancelled;
 		// TODO
 		Sleep(500);
 	}
 	// send the completed progress just to be safe
 	SendMessageW(p->hwnd, msgProgress,
 		(WPARAM) (&completed), (LPARAM) (&total));
+	goto send;
 
+cancelled:
+	// operation cancelled; nuke entries and send back NULL
+	freeEntries(entries);
+	entries = NULL;
+	// fall through to send
+
+send:
 	// and we're done! give all this stuff back to the main window
 	SendMessageW(p->hwnd, msgFinished, (WPARAM) entries, 0);
 	result = 0;

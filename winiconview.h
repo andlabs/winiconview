@@ -23,6 +23,7 @@ enum {
 	// Sent by collector thread when done. Not sent if user cancelled.
 	// wParam - if successful, pointer to struct entry of first entry
 	// lParam - if failure, pointer to struct getIconsFailure
+	// both should be 0 if the operation was cancelled
 	// lResult - 0
 	msgFinished,
 };

@@ -135,7 +135,7 @@ IProgressDialog *newProgressDialog(void)
 	HRESULT hr;
 
 	hr = CoCreateInstance(&CLSID_ProgressDialog, NULL, CLSCTX_INPROC_SERVER,
-		&IID_IProgressDialog, (LPVOID *) (&(d->pd)));
+		&IID_IProgressDialog, (LPVOID *) (&pd));
 	if (hr != S_OK)
 		panichr(L"Error creating progress dialog", hr);
 	return pd;
@@ -143,7 +143,7 @@ IProgressDialog *newProgressDialog(void)
 
 void progdlgSetTexts(IProgressDialog *pd, WCHAR *title)
 {
-	HRESULT;
+	HRESULT hr;
 
 	hr = IProgressDialog_SetTitle(pd, title);
 	if (hr != S_OK)
@@ -163,12 +163,12 @@ void progdlgResetTimer(IProgressDialog *pd)
 {
 	HRESULT hr;
 
-	hr = IProgressDIalog_Timer(pd, PDTIMER_RESET, NULL);
+	hr = IProgressDialog_Timer(pd, PDTIMER_RESET, NULL);
 	if (hr != S_OK)
 		panichr(L"Error resetting progress dialog timer", hr);
 }
 
-void progdlgSetProgress(IProgressDialog *pd, ULONGLONG current, ULONGLONG total)
+void progdlgSetProgress(IProgressDialog *pd, ULONGLONG completed, ULONGLONG total)
 {
 	HRESULT hr;
 

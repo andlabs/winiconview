@@ -65,6 +65,34 @@ static void onCreate(HWND hwnd)
 	relayoutControls(d);
 }
 
+static void addIcons(struct mainwinData *d, WCHAR *dir)
+{
+	struct getIconsParams p;
+	HRESULT hr;
+
+	ZeroMemory(&p, sizeof (struct getIconsParams));
+	p.parent = d->hwnd;
+	p.dir = dir;
+	hr = getIcons(&p);
+	if (hr == S_FALSE)		// user cancelled; do nothing
+		return;
+	if (hr != S_OK) {
+		// TODO
+		MessageBoxW(d->hwnd, p.errmsg, L"It failed", 0);
+		return;
+	}
+	if (p.entries == NULL) {
+		// TODO check error
+		MessageBoxW(d->hwnd,
+			L"No files with icons were found in the chosen directory.",
+			programName,
+			MB_OK | MB_ICONINFORMATION);
+		return;
+	}
+	// TODO
+	freeEntries(p.entries);
+}
+
 static void chooseFolder(struct mainwinData *d)
 {
 	BROWSEINFOW bi;
@@ -85,7 +113,7 @@ static void chooseFolder(struct mainwinData *d)
 	if (SHGetPathFromIDListW(pidl, path) == FALSE)
 		panic(L"Error extracting folder path from PIDL from folder dialog");
 	CoTaskMemFree(pidl);
-	SendMessageW(d->hwnd, msgAddIcons, (WPARAM) path, 0);
+	addIcons(d, path);
 }
 
 static void changeCurrentSize(struct mainwinData *d, int which)
@@ -99,56 +127,6 @@ static void changeCurrentSize(struct mainwinData *d, int which)
 		rcMenuLargeIcons + d->currentSize,
 		MF_BYCOMMAND) == 0)
 		panic(L"Error adjusting View menu radio buttons after changing icon size");
-}
-
-static void addIcons(struct mainwinData *d, WCHAR *dir)
-{
-	struct entry *entries;
-	struct entry *current;
-	ULONGLONG completed;
-	ULONGLONG total;
-	HRESULT hr;
-
-	if (d->pd != NULL)
-		panic(L"BUG: Attempt to add icons while icons are being added already");
-	d->pd = newProgressDialog();
-	progdlgSetTexts(d->pd, L"Adding icons");
-	progdlgStart(d->pd, d->hwnd,
-		PROGDLG_NORMAL | PROGDLG_MODAL | PROGDLG_NOTIME | PROGDLG_NOMINIMIZE);
-
-	hr = collectFiles(dir, &entries, &total);
-	if (hr != S_OK)
-		;	// TODO
-}
-
-static LRESULT iconsProgress(struct mainwinData *d, ULONGLONG *completed, ULONGLONG *total)
-{
-	HRESULT hr;
-
-	if (d->pd == NULL)
-		panic(L"BUG: Attempt to continue adding icons while icons are not being added");
-	// IProgressDialog doesn't like it if we set the progress to 0 items completed
-	// it will return an HRESULT value of 1
-	if (*completed != 0) {}
-	return (LRESULT) IProgressDialog_HasUserCancelled(d->pd);
-}
-
-static void iconsFinished(struct mainwinData *d, struct entry *entries, struct getIconsFailure *err)
-{
-	HRESULT hr;
-
-	if (d->pd == NULL)
-		panic(L"BUG: Attempt to finish adding icons while icons are not being added");
-
-	// TODO on success, add icons here
-
-	progdlgDestroy(d->pd);
-	d->pd = NULL;
-
-	if (err != NULL) {
-		// TODO
-		MessageBoxW(d->hwnd, err->msg, L"It failed", 0);
-	}
 }
 
 static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)

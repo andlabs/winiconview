@@ -29,7 +29,15 @@ struct entry {
 };
 extern struct entry *allocEntry(struct entry *prev, WCHAR *filename);
 extern void freeEntries(struct entry *cur);
-extern HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count);
+struct getIconsParams {
+	// input
+	HWND parent;
+	WCHAR *dir;
+	// output
+	struct entry *entries;
+	const WCHAR *errmsg;
+};
+extern HRESULT getIcons(struct getIconsParams *p);
 
 // util.c
 extern struct findFile *startFindFile(WCHAR *path);
@@ -61,5 +69,5 @@ extern IProgressDialog *newProgressDialog(void);
 extern void progdlgSetTexts(IProgressDialog *pd, WCHAR *title);
 extern void progdlgStart(IProgressDialog *pd, HWND owner, DWORD flags);
 extern void progdlgResetTimer(IProgressDialog *pd);
-extern void progdlgSetProgress(IProgressDialog *pd, ULONGLONG current, ULONGLONG total);
+extern void progdlgSetProgress(IProgressDialog *pd, ULONGLONG completed, ULONGLONG total);
 extern void progdlgDestroy(IProgressDialog *pd);

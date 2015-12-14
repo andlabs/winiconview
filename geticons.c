@@ -1,6 +1,9 @@
 // 13 december 2015
 #include "winiconview.h"
 
+// TODO restructure this to not need threads
+// turns out because we're using IProgressDialog we don't need a background thread :D
+
 struct entry *allocEntry(struct entry *prev, WCHAR *filename)
 {
 	struct entry *e;

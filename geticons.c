@@ -118,7 +118,7 @@ HRESULT getIcons(struct getIconsParams *p)
 		hr = S_OK;
 		goto out;
 	}
-MessageBoxW(NULL, L"x", L"x", 0);
+
 	progdlgResetTimer(pd);
 	current = first;
 	completed = 0;
@@ -131,11 +131,10 @@ MessageBoxW(NULL, L"x", L"x", 0);
 		}
 
 		// TODO
-		Sleep(500);
 		current = current->next;
 
 		completed++;
-		progdlgSetProgress(pd, completed, total);
+//TODO		progdlgSetProgress(pd, completed, total);
 	}
 
 	hr = S_OK;

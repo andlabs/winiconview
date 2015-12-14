@@ -89,8 +89,7 @@ static void addIcons(struct mainwinData *d, WCHAR *dir)
 			MB_OK | MB_ICONINFORMATION);
 		return;
 	}
-	// TODO
-	freeEntries(p.entries);
+	appendFolder(d->treeview, dir, p.entries);
 }
 
 static void chooseFolder(struct mainwinData *d)

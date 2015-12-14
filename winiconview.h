@@ -46,6 +46,9 @@ extern WCHAR *findFileName(struct findFile *ff);
 extern HRESULT findFileError(struct findFile *ff);
 extern HRESULT findFileEnd(struct findFile *ff);
 
+// treeview.c
+extern void appendFolder(HWND tv, WCHAR *dir, struct entry *entries);
+
 // panic.c
 extern HWND panicParent;
 extern void panic(const WCHAR *msg);

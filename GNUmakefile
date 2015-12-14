@@ -11,6 +11,7 @@ CFILES = \
 	mainwin.c \
 	panic.c \
 	progressdialog.c \
+	treeview.c \
 	util.c
 
 HFILES = \

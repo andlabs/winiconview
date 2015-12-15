@@ -21,6 +21,7 @@ extern void uninitMainWindow(HWND mainwin);
 
 // geticons.c
 struct entry {
+	// TODO rename to basename
 	WCHAR *filename;
 	UINT n;
 	HIMAGELIST largeIcons;
@@ -40,6 +41,7 @@ struct getIconsParams {
 extern HRESULT getIcons(struct getIconsParams *p);
 
 // findfile.c
+struct findFile;		// TODO find the real way to shut msvc up about this
 extern HRESULT startFindFile(WCHAR *path, struct findFile **out);
 extern BOOL findFileNext(struct findFile *ff);
 extern WCHAR *findFileName(struct findFile *ff);

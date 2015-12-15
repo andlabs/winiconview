@@ -17,8 +17,7 @@ HRESULT pathJoin(WCHAR *a, WCHAR *b, WCHAR **ret)
 	joined = (WCHAR *) malloc((MAX_PATH + 1) * sizeof (WCHAR));
 	if (joined == NULL)
 		return E_OUTOFMEMORY;
-	result = PathCombineW(joined, a, b);
-	if (result == NULL) {
+	if (PathCombineW(joined, a, b) == NULL) {
 		lasterr = GetLastError();
 		free(joined);
 		return lasterrToHRESULT(lasterr);

@@ -26,18 +26,17 @@ void freeEntries(struct entry *cur)
 	while (cur != NULL) {
 		next = cur->next;
 		free(cur->filename);
+		// TODO log if these failed
 		if (cur->largeIcons != NULL)
-			if (ImageList_Destroy(cur->largeIcons) == 0)
-				panic(L"Error destroying large icon image list");
+			ImageList_Destroy(cur->largeIcons);
 		if (cur->smallIcons != NULL)
-			if (ImageList_Destroy(cur->smallIcons) == 0)
-				panic(L"Error destroying small icon image list");
+			ImageList_Destroy(cur->smallIcons);
 		free(cur);
 		cur = next;
 	}
 }
 
-static HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count)
+static HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *countOut)
 {
 	struct entry *first;
 	struct entry *current;
@@ -61,7 +60,7 @@ static HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count)
 	current = NULL;
 	count = 0;
 	while (findFileNext(ff)) {
-		hr = pathJoin(dir, findFileName(ff), &pathname);
+		hr = pathJoin(dir, findFileName(ff), &filename);
 		if (hr != S_OK)
 			goto fail;
 		n = (UINT) ExtractIconW(hInstance, filename, (UINT) (-1));
@@ -90,8 +89,99 @@ static HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count)
 	return S_OK;
 
 fail:
-	findFIleEnd(ff);
+	findFileEnd(ff);
 	freeEntries(first);
+	return hr;
+}
+
+static HRESULT getOne(struct entry *entry, WCHAR *dir)
+{
+	WCHAR *filename;
+	HICON *largei, *smalli;
+	UINT m;
+	int i;
+	DWORD lasterr;
+	HRESULT hr;
+
+	largei = (HICON *) malloc(entry->n * sizeof (HICON));
+	if (largei == NULL)
+		return E_OUTOFMEMORY;
+	smalli = (HICON *) malloc(entry->n * sizeof (HICON));
+	if (smalli == NULL) {
+		free(largei);
+		return E_OUTOFMEMORY;
+	}
+
+	hr = pathJoin(dir, entry->filename, &filename);
+	if (hr != S_OK) {
+		free(largei);
+		free(smalli);
+		return hr;
+	}
+
+	m = ExtractIconExW(filename, 0, largei, smalli, entry->n);
+{DWORD lasterr;
+lasterr = GetLastError();
+WCHAR msg[2048];
+_snwprintf(msg, 2048, L"%I32u %I32u", m, entry->n);
+MessageBoxW(NULL, msg, entry->filename, 0);
+SetLastError(lasterr);}
+	if (m != entry->n * 2) {
+		lasterr = GetLastError();
+		hr = lasterrToHRESULT(lasterr);
+//		goto out;
+	}
+
+	// ILC_MASK for icons that use a transparency mask; ILC_COLOR32 for those that don't so we can support newer icons
+	entry->largeIcons = ImageList_Create(GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON),
+		ILC_COLOR32 | ILC_MASK, 100, 100);
+	if (entry->largeIcons == NULL) {
+		lasterr = GetLastError();
+		hr = lasterrToHRESULT(lasterr);
+		goto out;
+	}
+	entry->smallIcons = ImageList_Create(GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON),
+		ILC_COLOR32 | ILC_MASK, 100, 100);
+	if (entry->smallIcons == NULL) {
+		lasterr = GetLastError();
+		hr = lasterrToHRESULT(lasterr);
+		goto smallfail;
+	}
+
+	for (i = 0; i < (int) (entry->n); i++) {
+		if (ImageList_AddIcon(entry->largeIcons, largei[i]) != i) {
+			lasterr = GetLastError();
+			hr = lasterrToHRESULT(lasterr);
+			goto ilfail;
+		}
+		if (ImageList_AddIcon(entry->smallIcons, smalli[i]) != i) {
+			lasterr = GetLastError();
+			hr = lasterrToHRESULT(lasterr);
+			goto ilfail;
+		}
+	}
+
+	// and we're good!
+	hr = S_OK;
+	goto out;
+
+ilfail:
+	// TODO log if these failed
+	ImageList_Destroy(entry->smallIcons);
+	entry->smallIcons = NULL;
+smallfail:
+	ImageList_Destroy(entry->largeIcons);
+	entry->smallIcons = NULL;
+
+out:
+	pathFree(filename);
+	for (i = 0; i < (int) (entry->n); i++) {
+		// TODO log failures
+		DestroyIcon(largei[i]);
+		DestroyIcon(smalli[i]);
+	}
+	free(largei);
+	free(smalli);
 	return hr;
 }
 
@@ -138,7 +228,13 @@ HRESULT getIcons(struct getIconsParams *p)
 			goto out;
 		}
 
-		// TODO
+		hr = getOne(current, p->dir);
+		if (hr != S_OK) {
+			p->errmsg = L"Error extracting icons from file";
+			freeEntries(first);
+			first = NULL;
+			goto out;
+		}
 		current = current->next;
 
 		completed++;

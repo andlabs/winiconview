@@ -39,12 +39,12 @@ struct getIconsParams {
 };
 extern HRESULT getIcons(struct getIconsParams *p);
 
-// util.c
-extern struct findFile *startFindFile(WCHAR *path);
+// findfile.c
+extern HRESULT startFindFile(WCHAR *path, struct findFile **out);
 extern BOOL findFileNext(struct findFile *ff);
 extern WCHAR *findFileName(struct findFile *ff);
 extern HRESULT findFileError(struct findFile *ff);
-extern HRESULT findFileEnd(struct findFile *ff);
+extern void findFileEnd(struct findFile *ff);
 
 // treeview.c
 extern void appendFolder(HWND tv, WCHAR *dir, struct entry *entries);

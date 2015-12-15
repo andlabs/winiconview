@@ -17,32 +17,49 @@ static BOOL ffReallyNoMoreFiles(struct findFile *ff, DWORD nmferr)
 	if (lasterr == nmferr)
 		return TRUE;
 	// nope, an actual error occurred
-	ff->hr = HRESULT_FROM_WIN32(lasterr);
-	if (ff->hr == S_OK)		// in case lasterr was 0
-		ff->hr = E_FAIL;
+	ff->hr = lasterrToHRESULT(lasterr);
 	return FALSE;
 }
 
-struct findFile *startFindFile(WCHAR *path)
+// returns:
+// - S_OK if there are files
+// - S_FALSE if there are none
+// - an error code otherwise
+HRESULT startFindFile(WCHAR *path, struct findFile **out)
 {
 	struct findFile *ff;
-	WCHAR finddir[MAX_PATH + 1];
+	WCHAR *finddir;
+	HRESULT hr;
 
-	if (PathCombineW(finddir, path, L"*") == NULL)		// TODO MSDN is unclear; see if this is documented as working correctly
-		// TODO return actual error
-		return NULL;
+	// initialize output parameters
+	*out = NULL;
+
 	ff = (struct findFile *) malloc(sizeof (struct findFile));
 	if (ff == NULL)
-		return NULL;
+		return E_OUTOFMEMORY;
 	ZeroMemory(ff, sizeof (struct findFile));
+
+	hr = pathJoin(path, L"*", &finddir);
+	if (hr != S_OK) {
+		free(ff);
+		return hr;
+	}
+
 	// get the first file now
-	// findFileNext() will see that ff->first is TRUE and return immediately; we get that first file's info then
+	// findFileNext() will see that ff->first is TRUE and return immediately; we can get that first file's info then
 	ff->first = TRUE;
 	ff->dir = FindFirstFileW(finddir, &(ff->entry));
 	if (ff->dir == INVALID_HANDLE_VALUE)
-		if (ffReallyNoMoreFiles(ff, ERROR_FILE_NOT_FOUND))
-			ff->done = TRUE;
-	return ff;
+		if (ffReallyNoMoreFiles(ff, ERROR_FILE_NOT_FOUND)) {
+			// no files
+			pathFree(finddir);
+			free(ff);
+			return S_FALSE;
+		}
+
+	pathFree(finddir);
+	*out = ff;
+	return S_OK;
 }
 
 BOOL findFileNext(struct findFile *ff)
@@ -73,20 +90,10 @@ HRESULT findFileError(struct findFile *ff)
 	return ff->hr;
 }
 
-HRESULT findFileEnd(struct findFile *ff)
+void findFileEnd(struct findFile *ff)
 {
-	DWORD lasterr;
-	HRESULT hr;
-
-	hr = S_OK;
-	if (FindClose(ff->dir) == 0) {
-		lasterr = GetLastError();
-		hr = HRESULT_FROM_WIN32(lasterr);
-		if (hr == S_OK)
-			hr = E_FAIL;
-	}
-	// always free ff, even on error
-	// sure this leaks ff->dir but the cause was already lost
+	// we have to keep going even if this fails
+	// TODO log an error
+	FindClose(ff->dir);
 	free(ff);
-	return hr;
 }

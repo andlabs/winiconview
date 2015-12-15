@@ -39,52 +39,62 @@ void freeEntries(struct entry *cur)
 	}
 }
 
-// TODO free first on failure
 static HRESULT collectFiles(WCHAR *dir, struct entry **out, ULONGLONG *count)
 {
 	struct entry *first;
 	struct entry *current;
-	BOOL isFirst;
 	struct findFile *ff;
-	WCHAR filename[MAX_PATH + 1];
+	WCHAR *filename;
 	UINT n;
-	ULONGLONG cnt;
+	ULONGLONG count;
 	HRESULT hr;
 
-	ff = startFindFile(dir);
-	if (ff == NULL)
-		return E_OUTOFMEMORY;
+	// initialize output parameters
+	*out = NULL;
+	*countOut = 0;
+
+	hr = startFindFile(dir, &ff);
+	if (hr == S_FALSE)		// no files; return defaults
+		return S_OK;
+	if (hr != S_OK)
+		return hr;
+
+	first = NULL;			// this is important; see below
 	current = NULL;
-	isFirst = TRUE;
-	cnt = 0;
+	count = 0;
 	while (findFileNext(ff)) {
-		// TODO check error
-		PathCombineW(filename, dir, findFileName(ff));
+		hr = pathJoin(dir, findFileName(ff), &pathname);
+		if (hr != S_OK)
+			goto fail;
 		n = (UINT) ExtractIconW(hInstance, filename, (UINT) (-1));
+		pathFree(filename);
 		if (n == 0)			// no icons in this file; try the next one
 			continue;
 		// this file has icons! queue it up
 		current = allocEntry(current, findFileName(ff));
 		if (current == NULL) {
-			findFileEnd(ff);		// ignore error; it's too late
-			return E_OUTOFMEMORY;
+			hr = E_OUTOFMEMORY;
+			goto fail;
 		}
 		current->n = n;
-		cnt++;
-		if (isFirst) {
+		count++;
+		if (first == NULL)		// save the first one; we return it
 			first = current;
-			isFirst = FALSE;
-		}
 	}
 	hr = findFileError(ff);
 	if (hr != S_OK)
-		return hr;
-	hr = findFileEnd(ff);
-	if (hr != S_OK)
-		return hr;
+		goto fail;
+	findFileEnd(ff);
+
+	// and we're good
 	*out = first;
-	*count = cnt;
+	*countOut = count;
 	return S_OK;
+
+fail:
+	findFIleEnd(ff);
+	freeEntries(first);
+	return hr;
 }
 
 // returns:

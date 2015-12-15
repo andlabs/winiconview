@@ -6,14 +6,14 @@ OUT = winiconview.exe
 OBJDIR = .obj
 
 CFILES = \
+	findfile.c \
 	geticons.c \
 	listview.c \
 	main.c \
 	mainwin.c \
 	panic.c \
 	progressdialog.c \
-	treeview.c \
-	util.c
+	treeview.c
 
 HFILES = \
 	winiconview.h \

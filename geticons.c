@@ -1,8 +1,6 @@
 // 13 december 2015
 #include "winiconview.h"
 
-// TODO make sure output parameters are cleared on start/on error
-
 struct entry *allocEntry(struct entry *prev, WCHAR *filename)
 {
 	struct entry *e;

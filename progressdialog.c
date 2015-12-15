@@ -7,7 +7,7 @@ explanation:
 
 First, Microsoft simply forgot to provide the COBJMACROS equivalent macros. That's not much of an issue; we can just write them ourselves, right?
 
-There are some macros for defining COM objects in a form that is both C and C++ agnostic. A description can be found at https://blogs.msdn.microsoft.com/oldnewthing/20041005-00/?p=37653/.
+There are some macros for defining COM interfaces in a form that is both C and C++ agnostic. A description can be found at https://blogs.msdn.microsoft.com/oldnewthing/20041005-00/?p=37653/.
 
 One of the rules for defining interfaces this way is that you have to include the methods of your derived interfaces before your own. So if you derive directly from IUnknown (like IProgressDialog does), you have to start your interface definition with
 

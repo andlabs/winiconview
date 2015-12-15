@@ -104,8 +104,8 @@ HRESULT getIcons(struct getIconsParams *p)
 
 	pd = newProgressDialog();
 	progdlgSetTexts(pd, L"Adding icons");
-	progdlgStart(pd, p->parent,
-		PROGDLG_NORMAL | PROGDLG_MODAL | PROGDLG_AUTOTIME | PROGDLG_NOMINIMIZE);
+	progdlgStartModal(pd, p->parent,
+		PROGDLG_NORMAL | PROGDLG_AUTOTIME | PROGDLG_NOMINIMIZE);
 
 	hr = collectFiles(p->dir, &first, &total);
 	if (hr != S_OK) {
@@ -142,6 +142,6 @@ HRESULT getIcons(struct getIconsParams *p)
 
 out:
 	p->entries = first;
-	progdlgDestroy(pd);
+	progdlgDestroyModal(pd, p->parent);
 	return hr;
 }

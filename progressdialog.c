@@ -150,13 +150,36 @@ void progdlgSetTexts(IProgressDialog *pd, WCHAR *title)
 		panichr(L"Error setting progress dialog title", hr);
 }
 
-void progdlgStart(IProgressDialog *pd, HWND owner, DWORD flags)
+void progdlgStartModal(IProgressDialog *pd, HWND owner, DWORD flags)
 {
 	HRESULT hr;
+
+	// Oh goodie, more bugs!
+	// tl;dr PROGDLG_MODAL is broken; we have to do it ourselves
+	// explanation:
+	// CLSID_ProgressDialog simply does not do modality properly, period.
+	// When you call StopProgressDialog(), the progress dialog
+	// lingers a bit before returning. It lingers just long enough that
+	// if you immediately open another modal dialog with the same
+	// owner, you wind up with two dialogs with the same owner.
+	// Eventually the progress dialog will re-enable the owner as
+	// part of the dialog cleanup, leaving you with an enabled owner
+	// in the middle of a modal dialog!
+	// Oh and don't bother trying to trap the HWND of the progress
+	// dialog and waiting for it to close; it doesn't actually do the
+	// dialog teardown in the correct order, so some random
+	// window gets activated instead of the owner window. Oops.
+	// So let's not bother with PROGDLG_MODAL; just do it ourselves.
+	flags &= ~PROGDLG_MODAL;
 
 	hr = IProgressDialog_StartProgressDialog(pd, owner, NULL, flags, NULL);
 	if (hr != S_OK)
 		panichr(L"Error starting progress dialog", hr);
+
+	// And now we disable the owner.
+	EnableWindow(owner, FALSE);
+	// Be sure to pass owner to progdlgDestroyModal() too!
+
 }
 
 void progdlgResetTimer(IProgressDialog *pd)
@@ -177,10 +200,13 @@ void progdlgSetProgress(IProgressDialog *pd, ULONGLONG completed, ULONGLONG tota
 		panichr(L"Error updating progress dialog", hr);
 }
 
-void progdlgDestroy(IProgressDialog *pd)
+void progdlgDestroyModal(IProgressDialog *pd, HWND owner)
 {
 	HRESULT hr;
 
+	// see progdlgStartModal() above
+	// THIS is the correct time to re-enable the owner window
+	EnableWindow(owner, TRUE);
 	hr = IProgressDialog_StopProgressDialog(pd);
 	if (hr != S_OK)
 		panichr(L"Error stopping progress dialog", hr);

@@ -7,6 +7,7 @@ OBJDIR = .obj
 
 CFILES = \
 	geticons.c \
+	listview.c \
 	main.c \
 	mainwin.c \
 	panic.c \

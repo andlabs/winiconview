@@ -10,6 +10,7 @@ struct mainwinData {
 	HWND listview;
 	int currentSize;		// 0 = large, 1 = small
 	IProgressDialog *pd;
+	struct entry *current;
 };
 
 static void relayoutControls(struct mainwinData *d)
@@ -56,7 +57,7 @@ static void onCreate(HWND hwnd)
 
 	d->listview = CreateWindowExW(WS_EX_CLIENTEDGE,
 		WC_LISTVIEWW, L"",
-		LVS_ICON | WS_CHILD | WS_VISIBLE | WS_VSCROLL,
+		LVS_ICON | LVS_SHAREIMAGELISTS | WS_CHILD | WS_VISIBLE | WS_VSCROLL,
 		0, 0, 100, 100,
 		d->hwnd, (HMENU) 101, hInstance, NULL);
 	if (d->listview == NULL)
@@ -115,6 +116,30 @@ static void chooseFolder(struct mainwinData *d)
 	addIcons(d, path);
 }
 
+static void selectFile(struct mainwinData *d, NMTREEVIEWW *nm)
+{
+	HTREEITEM parent;
+
+	// TODO is this the correct way to know that there is no selection?
+	if (nm->itemNew.hItem == NULL) {
+		d->current = NULL;
+		goto out;
+	}
+
+	// if we selected a folder, act as if we selected nothing
+	parent = (HTREEITEM) SendMessageW(d->treeview, TVM_GETNEXTITEM, TVGN_PARENT, (LPARAM) (nm->itemNew.hItem));
+	if (parent == NULL) {
+		d->current = NULL;
+		goto out;
+	}
+
+	d->current = (struct entry *) (nm->itemNew.lParam);
+	// fall through to out
+
+out:
+	loadListview(d->listview, d->current);
+}
+
 static void changeCurrentSize(struct mainwinData *d, int which)
 {
 	d->currentSize = which;
@@ -132,6 +157,7 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 {
 	struct mainwinData *d;
 	WINDOWPOS *wp = (WINDOWPOS *) lParam;
+	NMHDR *nm = (NMHDR *) lParam;
 
 	d = (struct mainwinData *) GetWindowLongPtrW(hwnd, GWLP_USERDATA);
 	if (d == NULL) {
@@ -164,6 +190,10 @@ static LRESULT CALLBACK mainwinWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPAR
 			// TODO
 			break;
 		}
+		break;
+	case WM_NOTIFY:
+		if (nm->hwndFrom == d->treeview && nm->code == TVN_SELCHANGED)
+			selectFile(d, (NMTREEVIEWW *) nm);
 		break;
 	case WM_WINDOWPOSCHANGED:
 		if ((wp->flags & SWP_NOSIZE) != 0)

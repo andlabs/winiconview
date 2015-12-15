@@ -257,14 +257,10 @@ HWND initMainWindow(void)
 	return mainwin;
 }
 
-// TODO report errors?
 void uninitMainWindow(HWND mainwin)
 {
-	BOOL destroyRet;
-
-	destroyRet = DestroyWindow(mainwin);
-	if (destroyRet == 0)
-		panic(L"Error destroying main winow");
-	if (UnregisterClassW(mainwinClass, hInstance) == 0)
-		panic(L"Error unregistering the main window class");
+	// TODO log failures?
+	// we can't panic on them; this is cleanup
+	DestroyWindow(mainwin);
+	UnregisterClassW(mainwinClass, hInstance);
 }

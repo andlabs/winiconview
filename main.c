@@ -48,8 +48,6 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLi
 		DispatchMessageW(&msg);
 	}
 
-	// this part is important; otherwise panic() will try to MessageBoxW() on a destroyed window
-	panicParent = NULL;
 	uninitMainWindow(mainwin);
 	uninit();
 	return 0;

@@ -52,6 +52,11 @@ extern void appendFolder(HWND tv, WCHAR *dir, struct entry *entries);
 // listview.c
 extern void loadListview(HWND lv, struct entry *entry);
 
+// util.c
+extern HRESULT lasterrToHRESULT(DWORD lasterr);
+extern HRESULT pathJoin(WCHAR *a, WCHAR *b, WCHAR **ret);
+extern void pathFree(WCHAR *path);
+
 // panic.c
 extern HWND panicParent;
 extern void panic(const WCHAR *msg);

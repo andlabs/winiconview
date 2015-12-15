@@ -13,7 +13,8 @@ CFILES = \
 	mainwin.c \
 	panic.c \
 	progressdialog.c \
-	treeview.c
+	treeview.c \
+	util.c
 
 HFILES = \
 	winiconview.h \
